@@ -1,33 +1,27 @@
 /** The better-auth client for a Product's browser code; `src/lib/auth-client.ts` creates it once. */
+import type { BetterAuthClientPlugin } from "better-auth/client";
 import { adminClient, twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient as createClient } from "better-auth/svelte";
 import { ac, roles } from "#lib/permissions.js";
 
-type ClientPlugin = NonNullable<Parameters<typeof createClient>[0]>["plugins"] extends (infer P)[] | undefined ? P : never;
-
-export type CreateAuthClientOptions = {
+export type CreateAuthClientOptions<P extends BetterAuthClientPlugin[] = []> = {
 	/** PUBLIC_ORIGIN. */
 	baseURL: string;
 	/** The Admin option (matches the server). */
 	admin?: boolean;
-	/** More client plugins, e.g. the MCP endpoint's (`@vonall/mcp/client`). */
-	plugins?: ClientPlugin[];
+	/** More client plugins, e.g. the MCP endpoint's (`@vonall/mcp/client`); they are part of the client's type. */
+	plugins?: P;
 };
 
-function build({ baseURL, admin = false, plugins = [] }: CreateAuthClientOptions) {
+// The admin client is part of the type whether or not the option is on; without the option it is left out at runtime
+type BasePlugins = [ReturnType<typeof twoFactorClient>, ReturnType<typeof adminClient<{ ac: typeof ac; roles: typeof roles }>>];
+
+/** The client with this package's plugins and the Product's. */
+export type AuthClient<P extends BetterAuthClientPlugin[] = []> = ReturnType<typeof createClient<{ baseURL: string; plugins: [...BasePlugins, ...P] }>>;
+
+export function createAuthClient<P extends BetterAuthClientPlugin[] = []>({ baseURL, admin = false, plugins }: CreateAuthClientOptions<P>): AuthClient<P> {
 	return createClient({
 		baseURL: baseURL || "http://localhost:5173",
-		plugins: [
-			twoFactorClient(),
-			// The admin client's types are part of the client's type whether or not the option is on
-			...(admin ? [adminClient({ ac, roles })] : ([] as ReturnType<typeof adminClient>[])),
-			...plugins,
-		],
-	});
-}
-
-export type AuthClient = ReturnType<typeof build>;
-
-export function createAuthClient(options: CreateAuthClientOptions): AuthClient {
-	return build(options);
+		plugins: [twoFactorClient(), ...(admin ? [adminClient({ ac, roles })] : []), ...(plugins ?? [])],
+	}) as unknown as AuthClient<P>;
 }

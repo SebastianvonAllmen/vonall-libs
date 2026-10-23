@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.1.1
+
+### Patch Changes
+
+- The plugins a Product passes to `createAuth()` and `createAuthClient()` are part of the returned types (`auth.api.…`, `authClient.…` of the MCP endpoint's plugins).
+
 ## 0.1.0
 
 ### Minor Changes

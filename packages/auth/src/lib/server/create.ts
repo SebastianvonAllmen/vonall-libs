@@ -25,7 +25,7 @@ import { nameFromEmail } from "#lib/util/names.js";
 
 export type SocialProvider = { clientId: string; clientSecret: string };
 
-export type CreateAuthOptions = {
+export type CreateAuthOptions<P extends BetterAuthPlugin[] = []> = {
 	/** The Product's Drizzle database. */
 	db: Db;
 	/** The Product's tables from `authSchema()`, the same objects its `schema/` re-exports. */
@@ -44,8 +44,8 @@ export type CreateAuthOptions = {
 	admin?: boolean;
 	/** Social logins with keys; a provider without keys is left out (its button never shows). */
 	social?: { github?: SocialProvider | null; google?: SocialProvider | null };
-	/** More better-auth plugins, e.g. the MCP endpoint's (`@vonall/mcp`). */
-	plugins?: BetterAuthPlugin[];
+	/** More better-auth plugins, e.g. the MCP endpoint's (`@vonall/mcp`); they are part of the instance's type. */
+	plugins?: P;
 	/** More rate limit rules, by path (`@vonall/mcp` adds `/oauth2/register`). */
 	rateLimitRules?: Record<string, { window: number; max: number }>;
 	log?: AuthLog;
@@ -67,8 +67,8 @@ const hasKeys = (p: SocialProvider | null | undefined): p is SocialProvider => B
  * plugin is in it whether or not the option is on, so `user.role` exists; without the option it is left out at runtime
  * and nobody has a role.
  */
-type FullPlugins = [ReturnType<typeof twoFactor>, ReturnType<typeof adminPlugin<{ ac: typeof ac; roles: typeof roles }>>, ReturnType<typeof sveltekitCookies>];
-export type Auth = ReturnType<typeof betterAuth<{ plugins: FullPlugins }>>;
+type BasePlugins = [ReturnType<typeof twoFactor>, ReturnType<typeof adminPlugin<{ ac: typeof ac; roles: typeof roles }>>];
+export type Auth<P extends BetterAuthPlugin[] = []> = ReturnType<typeof betterAuth<{ plugins: [...BasePlugins, ...P, ReturnType<typeof sveltekitCookies>] }>>;
 
 /** The admin plugin's columns, named here because the plugin's type doesn't carry them into the session's user. */
 export type AdminFields = { role?: string | null; banned?: boolean | null; banReason?: string | null; banExpires?: Date | null };
@@ -76,8 +76,8 @@ export type AdminFields = { role?: string | null; banned?: boolean | null; banRe
 export type AuthUser = Auth["$Infer"]["Session"]["user"] & AdminFields;
 export type AuthSession = Auth["$Infer"]["Session"]["session"];
 
-function build(options: CreateAuthOptions): Auth {
-	const { secret, origin, appName, signupMode, admin = false, social = {}, plugins = [], rateLimitRules = {}, log = consoleLog } = options;
+function build<P extends BetterAuthPlugin[]>(options: CreateAuthOptions<P>): Auth<P> {
+	const { secret, origin, appName, signupMode, admin = false, social = {}, plugins, rateLimitRules = {}, log = consoleLog } = options;
 	const baseURL = origin || "http://localhost";
 	return betterAuth({
 		appName,
@@ -168,15 +168,15 @@ function build(options: CreateAuthOptions): Auth {
 		plugins: [
 			twoFactor(),
 			...(admin ? [adminPlugin({ ac, roles })] : []),
-			...plugins,
+			...(plugins ?? []),
 			sveltekitCookies(getRequestEvent), // Ensure cookies are populated in SvelteKit
 		],
-	}) as unknown as Auth;
+	}) as unknown as Auth<P>;
 }
 
-export type CreatedAuth = {
+export type CreatedAuth<P extends BetterAuthPlugin[] = []> = {
 	/** The better-auth instance: `auth.api`, `auth.handler`, `auth.$context`. */
-	auth: Auth;
+	auth: Auth<P>;
 	/** The hooks handle: the session into `locals.user`/`locals.session`, and better-auth's own routes (/api/auth/*). */
 	handle: Handle;
 	/** For `src/routes/api/auth/[...auth]/+server.ts`: `export const GET = apiHandler, POST = apiHandler`. */
@@ -185,8 +185,9 @@ export type CreatedAuth = {
 	providers: { github: boolean; google: boolean };
 };
 
-export function createAuth(options: CreateAuthOptions): CreatedAuth {
-	const auth = build(options);
+export function createAuth<P extends BetterAuthPlugin[] = []>(options: CreateAuthOptions<P>): CreatedAuth<P> {
+	// Inside, the instance is used with this package's plugins only; the Product gets it with its own plugins' types too
+	const auth = build(options) as unknown as Auth;
 	const { social = {} } = options;
 	setRegistry({
 		db: options.db,
@@ -211,5 +212,5 @@ export function createAuth(options: CreateAuthOptions): CreatedAuth {
 		return svelteKitHandler({ event, resolve, auth, building });
 	};
 	const apiHandler: RequestHandler = ({ request }) => auth.handler(request);
-	return { auth, handle, apiHandler, providers: { github: hasKeys(social.github), google: hasKeys(social.google) } };
+	return { auth: auth as unknown as Auth<P>, handle, apiHandler, providers: { github: hasKeys(social.github), google: hasKeys(social.google) } };
 }
