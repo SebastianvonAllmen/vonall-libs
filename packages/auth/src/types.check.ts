@@ -10,19 +10,14 @@ import type { Auth, CreateAuthOptions, CreatedAuth } from "#lib/server/create.js
 import { createAuth } from "#lib/server/create.js";
 
 declare const options: CreateAuthOptions;
+const exists = (..._members: unknown[]) => {};
 
 const plain: CreatedAuth = createAuth(options);
-plain.auth.api.getSession;
-plain.auth.api.listSessions;
+exists(plain.auth.api.getSession, plain.auth.api.listSessions);
 
 const withMcp = createAuth({ ...options, plugins: [jwt(), mcp({ loginPage: "/auth/login", consentPage: "/auth/consent", resource: "http://localhost/api/mcp" })] });
-withMcp.auth.api.getOAuthClientPublic;
-withMcp.auth.api.getSession;
 const base: Auth = withMcp.auth as unknown as Auth;
-base.$Infer.Session.user.role;
+exists(withMcp.auth.api.getOAuthClientPublic, withMcp.auth.api.getSession, base.$Infer.Session.user.role);
 
 const client = createAuthClient({ baseURL: "http://localhost:5173", admin: true, plugins: [oauthProviderClient()] });
-client.twoFactor.enable;
-client.admin.setRole;
-client.oauth2.consent;
-client.signIn.social;
+exists(client.twoFactor.enable, client.admin.setRole, client.oauth2.consent, client.signIn.social);
