@@ -2,6 +2,7 @@
 	import { Trash2, X } from "@lucide/svelte";
 	import { toast } from "svelte-sonner";
 	import { m } from "#lib/messages.js";
+	import { EINLADUNG_GUELTIG_TAGE } from "#lib/util/signup.js";
 	import { deleteUser, getAllUsers, setUserRole } from "#lib/remote/app_user.remote.js";
 	import { adminWithdrawEinladung, getAlleEinladungen } from "#lib/remote/einladung.remote.js";
 	import { authUi } from "#lib/ui/context.js";
@@ -68,7 +69,7 @@
 
 	<section class="panel grid gap-3 p-5">
 		<span class="section-kicker">{m().invitations}</span>
-		<p class="text-sm text-muted-foreground">{m().inviteIntro}</p>
+		<p class="text-sm text-muted-foreground">{m().inviteIntro(EINLADUNG_GUELTIG_TAGE)}</p>
 		<EinladungErstellen />
 		{#if einladungen.length === 0}
 			<p class="text-sm text-muted-foreground">{m().noOpenInvitations}</p>

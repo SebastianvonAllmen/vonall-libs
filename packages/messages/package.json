@@ -1,0 +1,54 @@
+{
+	"name": "@vonall/messages",
+	"version": "0.0.0",
+	"description": "defineMessages({ en, de }) for the Libraries' strings",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/SebastianvonAllmen/vonall-libs.git",
+		"directory": "packages/messages"
+	},
+	"type": "module",
+	"scripts": {
+		"check": "svelte-kit sync && tsc --noEmit -p tsconfig.json",
+		"test:unit": "vitest run --project unit --passWithNoTests",
+		"test:db": "vitest run --project db --passWithNoTests",
+		"build": "svelte-kit sync && svelte-package && publint"
+	},
+	"files": [
+		"dist",
+		"!dist/**/*.test.*",
+		"CHANGELOG.md"
+	],
+	"sideEffects": [
+		"**/*.css"
+	],
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"peerDependencies": {},
+	"devDependencies": {
+		"@sveltejs/kit": "^3.1.0",
+		"@sveltejs/package": "^3.0.1",
+		"@sveltejs/vite-plugin-svelte": "7.3.1",
+		"publint": "^0.3.25",
+		"svelte": "^5.57.2",
+		"typescript": "^6.0.3",
+		"vite": "8.3.4",
+		"vitest": "^5.0.5"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

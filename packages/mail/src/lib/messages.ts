@@ -1,8 +1,10 @@
 /**
  * The package's UI strings, in English and German (Swiss spelling). A Product calls configureMailMessages once, from a
- * module its root layout and its server wiring import, with its LOCALE and the few words it wants differently; the
+ * module its root layout and its server wiring import, with its locale ("de-CH") and the few words it wants differently; the
  * templates read `m()`. A new string in a release needs no Product change.
  */
+import { defineMessages } from "@vonall/messages";
+
 export const en = {
 	/** Below the button of a mail, before the bare link. */
 	orUseLink: "Or use this link:",
@@ -20,13 +22,4 @@ export const de: MailMessages = {
 	sendFailed: "Die E-Mail konnte nicht verschickt werden",
 };
 
-export type Locale = "en" | "de";
-
-let current: MailMessages = en;
-
-export function configureMailMessages({ locale, overrides }: { locale: Locale; overrides?: Partial<MailMessages> }) {
-	current = { ...(locale === "de" ? de : en), ...overrides };
-}
-
-/** The configured messages. */
-export const m = (): MailMessages => current;
+export const { m, configure: configureMailMessages } = defineMessages({ en, de });

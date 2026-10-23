@@ -6,6 +6,7 @@ ADR 0005).
 
 | Package | What it holds |
 | --- | --- |
+| `@vonall/messages` | `defineMessages({ en, de })`: how every package holds its strings and takes the app's locale. |
 | `@vonall/mail` | Mail over any SMTP server (nodemailer): a `Mailer`, the builder, the mail layout. Off without an SMTP host. |
 | `@vonall/auth` | better-auth with the hooks, the `protected…`/`admin…` helpers, Einladungen, Konto, the auth pages and the settings tabs; Admin as an option. |
 | `@vonall/mcp` | The MCP endpoint with tools and prompts, OAuth for agents, the consent page, the Agents tab. |

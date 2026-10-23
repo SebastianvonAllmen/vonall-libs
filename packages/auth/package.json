@@ -104,6 +104,7 @@
 	},
 	"dependencies": {
 		"@vonall/mail": "workspace:^",
+		"@vonall/messages": "workspace:^",
 		"better-auth": "^1.7.12",
 		"clsx": "^2.1.1",
 		"tailwind-merge": "^3.7.0",

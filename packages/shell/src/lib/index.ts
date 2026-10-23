@@ -1,4 +1,4 @@
-export { configureShellMessages, m, type Locale, type ShellMessages } from "#lib/messages.js";
+export { configureShellMessages, m, type ShellMessages } from "#lib/messages.js";
 export { activeNavItem, crumbLabel, crumbs, humanize, type NavItem } from "#lib/nav.js";
 export { default as AppShell, type ShellUser } from "#lib/shell/AppShell.svelte";
 export { default as AppSideBar } from "#lib/shell/AppSideBar.svelte";

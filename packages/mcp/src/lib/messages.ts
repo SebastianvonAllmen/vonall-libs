@@ -3,6 +3,8 @@
  * answers a person (what it answers an assistant stays English). A Product calls configureMcpMessages once, from a
  * module its root layout and its server wiring import; code reads `m()`.
  */
+import { defineMessages } from "@vonall/messages";
+
 export const en = {
 	// The protocol, to the assistant's user
 	invalidInput: "Invalid input",
@@ -82,13 +84,4 @@ export const de: McpMessages = {
 	agentsNote: "Was ein Assistent liest, geht an seinen Anbieter. Du kannst ihm den Zugriff hier jederzeit entziehen.",
 };
 
-export type Locale = "en" | "de";
-
-let current: McpMessages = en;
-
-export function configureMcpMessages({ locale, overrides }: { locale: Locale; overrides?: Partial<McpMessages> }) {
-	current = { ...(locale === "de" ? de : en), ...overrides };
-}
-
-/** The configured messages. */
-export const m = (): McpMessages => current;
+export const { m, configure: configureMcpMessages } = defineMessages({ en, de });

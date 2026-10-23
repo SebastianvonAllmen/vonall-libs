@@ -63,6 +63,7 @@
 		"access": "public"
 	},
 	"dependencies": {
+		"@vonall/messages": "workspace:^",
 		"nodemailer": "^10.2.1"
 	}
 }

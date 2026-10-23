@@ -9,9 +9,9 @@ import { registry } from "#lib/server/registry.js";
 import { EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 import { UserRepo } from "#lib/server/repositories/UserRepo.js";
 import type { EinladungInfo, SignupMode, SignupState } from "#lib/types.js";
-import { signupState } from "#lib/util/signup.js";
+import { EINLADUNG_GUELTIG_TAGE, signupState } from "#lib/util/signup.js";
 
-export const EINLADUNG_GUELTIG_TAGE = 14;
+export { EINLADUNG_GUELTIG_TAGE };
 /** The cookie that carries an Einladung's token from its link through signup (email, Google or GitHub). */
 export const EINLADUNG_COOKIE = "einladung";
 
