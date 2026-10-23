@@ -1,5 +1,11 @@
 # @vonall/mail
 
+## 0.1.1
+
+### Patch Changes
+
+- The changelog ships in the package, for the Products' `/update` skill.
+
 ## 0.1.0
 
 ### Minor Changes
