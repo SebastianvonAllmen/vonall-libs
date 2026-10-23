@@ -2,11 +2,13 @@ import { verifyOAuthQueryParams } from "@better-auth/oauth-provider";
 import { error, redirect, type ServerLoadEvent } from "@sveltejs/kit";
 import { contextOf } from "@vonall/auth/server";
 import { m } from "#lib/messages.js";
+import { registrationOf } from "#lib/server/endpoint.js";
+import { scopeLines } from "#lib/server/protocol.js";
 
 type Event = Pick<ServerLoadEvent, "locals" | "url" | "request">;
 
-/** What the consent page shows. */
-export type ConsentData = { clientName: string; clientUri: string | null; backTo: string | null; scopes: string[] };
+/** What the consent page shows; `toolScopes` are the tools' consent lines in the app's language. */
+export type ConsentData = { clientName: string; clientUri: string | null; backTo: string | null; scopes: string[]; toolScopes: string[] };
 
 /**
  * `/auth/consent`: the consent screen of an MCP client authorisation; the provider signs the query it sends us here with.
@@ -14,7 +16,8 @@ export type ConsentData = { clientName: string; clientUri: string | null; backTo
  */
 export async function consentLoad({ url, locals, request }: Event): Promise<ConsentData> {
 	if (!locals.session) throw redirect(302, `/auth/login${url.search}`);
-	const { auth } = contextOf(locals);
+	const { auth, locale } = contextOf(locals);
+	const { tools } = registrationOf(locals);
 	const query = url.search.slice(1);
 	const { secret } = await auth.$context;
 	if (!(await verifyOAuthQueryParams(query, secret))) {
@@ -32,5 +35,6 @@ export async function consentLoad({ url, locals, request }: Event): Promise<Cons
 		clientUri: client.client_uri ?? null,
 		backTo,
 		scopes: (params.get("scope") ?? "").split(" ").filter(Boolean),
+		toolScopes: scopeLines(tools, locale),
 	};
 }

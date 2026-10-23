@@ -8,6 +8,7 @@ import { cimd } from "@better-auth/cimd";
 import { fetchClientMetadataResource } from "@better-auth/cimd/node";
 import { mcp } from "@better-auth/mcp";
 import { jwt } from "better-auth/plugins";
+import { MCP_PATH } from "#lib/path.js";
 
 /** The three plugins, in the Product's `betterAuth({ plugins })` (a tuple, so the instance's type keeps them). */
 export function mcpPlugins(origin: string): [ReturnType<typeof jwt>, ReturnType<typeof mcp>, ReturnType<typeof cimd>] {
@@ -16,7 +17,7 @@ export function mcpPlugins(origin: string): [ReturnType<typeof jwt>, ReturnType<
 		mcp({
 			loginPage: "/auth/login",
 			consentPage: "/auth/consent",
-			resource: `${origin || "http://localhost"}/api/mcp`,
+			resource: `${origin || "http://localhost"}${MCP_PATH}`,
 			allowDynamicClientRegistration: true,
 			allowUnauthenticatedClientRegistration: true,
 			// CLI agents (Claude Code, Gemini CLI) call back on http://localhost, editors on custom schemes: native clients
