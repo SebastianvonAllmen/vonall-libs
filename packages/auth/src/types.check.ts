@@ -10,7 +10,7 @@ import type { Auth, CreateAuthOptions, CreatedAuth } from "#lib/server/create.js
 import { createAuth } from "#lib/server/create.js";
 
 declare const options: CreateAuthOptions;
-const exists = (..._members: unknown[]) => {};
+const exists = (...members: unknown[]) => members.length;
 
 const plain: CreatedAuth = createAuth(options);
 exists(plain.auth.api.getSession, plain.auth.api.listSessions);
