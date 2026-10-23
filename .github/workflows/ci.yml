@@ -1,0 +1,48 @@
+name: CI
+
+# On pull requests that are ready for review (drafts are skipped; marking one ready runs it), never for docs-only
+# changes. One job: the packages are small and a second runner would cost minutes for nothing.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - "**/*.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/vonall_test
+
+jobs:
+  check:
+    name: Check, lint, tests, build
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vonall
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm lint
+      - run: pnpm test:unit
+      - run: pnpm test:db
+      - run: pnpm build
