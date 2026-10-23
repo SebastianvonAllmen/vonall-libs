@@ -1,5 +1,11 @@
 # @vonall/mcp
 
+## 0.1.2
+
+### Patch Changes
+
+- `createMcp()` reads the auth instance on the first request, not at module load, so the Product's auth wiring and the endpoint may import each other.
+
 ## 0.1.1
 
 ### Patch Changes
