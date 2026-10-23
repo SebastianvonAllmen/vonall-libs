@@ -1,5 +1,12 @@
 # @vonall/mcp
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @vonall/auth@0.3.0
+
 ## 0.1.0
 
 ### Minor Changes

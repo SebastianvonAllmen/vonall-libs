@@ -40,3 +40,25 @@ hash, a native module) is a peer dependency: the Product lists it, so its server
 Strings come in English and German: `configureAuthMessages({ locale, overrides })`. A Product's own user-owned tables
 reference `user.id` with `onDelete: "cascade"`, so deleting a Konto takes everything with it. The MCP endpoint's
 better-auth plugins and rate limit rule come from `@vonall/mcp` through `plugins` and `rateLimitRules`.
+
+## The pages and the settings (`@vonall/auth/ui`)
+
+```svelte
+<!-- src/routes/+layout.svelte: once, so the components know the client, the app and its language -->
+<script lang="ts">
+	import { setAuthUi } from "@vonall/auth/ui";
+	setAuthUi({ authClient, appName: APP_NAME, locale: LOCALE, signupMode: SIGNUP_MODE });
+</script>
+
+<!-- src/routes/auth/login/+page.svelte -->   <LoginForm>{#snippet footer()}…the privacy line…{/snippet}</LoginForm>
+<!-- src/routes/auth/signup/+page.svelte -->  <RegisterForm />
+<!-- src/routes/auth/reset-password -->       <ResetPasswordForm />
+<!-- src/routes/einladung/[token] -->         <EinladungPage {data} tagline={APP_TAGLINE} />
+<!-- src/routes/home/settings -->             <SettingsPage extraTabs={[agentsTab()]}>{#snippet extra(id)}…{/snippet}</SettingsPage>
+<!-- src/routes/home/manage_user -->          <AdminView currentUserId={data.currentUserId} />
+```
+
+The components read `page.data` as the loads of this package fill it (`providers`, `mail`, `state`, `einladung`, `user`,
+`session`, `einladen`), use the `.panel` and `.section-kicker` classes of the Factory's `app.css`, and ship their own
+copies of the shadcn-svelte avatar, button, card, input, label and tabs; the Product's `app.css` adds
+`@source "../node_modules/@vonall/auth/dist"`.
