@@ -1,5 +1,18 @@
 # @vonall/mcp
 
+## 0.5.0
+
+### Minor Changes
+
+- [#19](https://github.com/SebastianvonAllmen/vonall-libs/pull/19) [`9fe0085`](https://github.com/SebastianvonAllmen/vonall-libs/commit/9fe0085c417ed808632f14ca94a2d061cfea07be) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - A deeper `Tool`: `run(ctx, input)` with `ctx: { userId, clientId, locale, role }`; an optional `scope: { en, de }` per tool, which the consent page lists (`consentLoad` adds `toolScopes`; the Product's children stay possible). `createMcp()` returns the registration (`tools`, `prompts`, `serverInfo`, `ctx`, `toolContext`), which `mcp.oauth` puts into `event.locals.mcp` and `mcpTester(mcp)` takes. `MCP_PATH` is the one place the endpoint's path is written.
+
+- [#18](https://github.com/SebastianvonAllmen/vonall-libs/pull/18) [`501cdd2`](https://github.com/SebastianvonAllmen/vonall-libs/commit/501cdd29349d56ccf1a87248950a3098f9e6e29d) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - `@vonall/auth`: a Product's own columns on `user` (`authSchema({ user: { phone: text("phone") } })` with `createAuth({ userFields })`); `userRepo(ctx)` selects every column. One typed `AuthPageData` between the loads and the components, read through `authPageData(...keys)` (throws naming the load when a key is missing); `signupLoad` no longer returns `mode`; `EinladungPage` takes `einladungLoad`'s data. `SettingsPage` takes a `profile` snippet below name and email; `SettingsTabDef.deletionNote` lets a tab add its sentence to the deletion tab (`DeletionTab` takes `notes`, no `agents`); the `deletionAgents` message moved to `@vonall/mcp`, whose `agentsTab()` carries it.
+
+### Patch Changes
+
+- Updated dependencies [[`501cdd2`](https://github.com/SebastianvonAllmen/vonall-libs/commit/501cdd29349d56ccf1a87248950a3098f9e6e29d)]:
+  - @vonall/auth@0.7.0
+
 ## 0.4.0
 
 ### Minor Changes
