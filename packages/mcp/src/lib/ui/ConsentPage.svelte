@@ -3,6 +3,7 @@
 	import { toast } from "svelte-sonner";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { messageOf } from "@vonall/auth";
 	import { m } from "#lib/messages.js";
 	import type { ConsentData } from "#lib/server/loads.js";
 
@@ -24,7 +25,7 @@
 			const res = await authClient.oauth2.consent({ accept });
 			if (res.error) toast.error(res.error.message || m().didntWork);
 		} catch (e) {
-			toast.error((typeof e === "object" && e && "message" in e && typeof e.message === "string" && e.message) || m().didntWork);
+			toast.error(messageOf(e, m().didntWork));
 		} finally {
 			busy = false;
 		}

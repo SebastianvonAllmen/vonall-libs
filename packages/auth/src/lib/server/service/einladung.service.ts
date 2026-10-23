@@ -8,7 +8,7 @@ import { m } from "#lib/messages.js";
 import { registry } from "#lib/server/registry.js";
 import { EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 import { UserRepo } from "#lib/server/repositories/UserRepo.js";
-import type { EinladungInfo, OffeneEinladung, SignupMode, SignupState } from "#lib/types.js";
+import type { EinladungInfo, SignupMode, SignupState } from "#lib/types.js";
 import { signupState } from "#lib/util/signup.js";
 
 export const EINLADUNG_GUELTIG_TAGE = 14;
@@ -68,21 +68,8 @@ export const EinladungService = {
 		return ok(undefined);
 	},
 
-	async offene(userId: string, now = new Date()): Promise<OffeneEinladung[]> {
-		return await EinladungRepo.listOpenBy(userId, now);
-	},
-
-	/** Withdraws an open Einladung of the user. */
-	async zurueckziehen(userId: string, einladungId: string): Promise<Result<void, EinladungError>> {
+	/** Withdraws an open Einladung of the user, or any open one when `userId` is null (the admin). */
+	async zurueckziehen(userId: string | null, einladungId: string): Promise<Result<void, EinladungError>> {
 		return (await EinladungRepo.deleteOpen(einladungId, userId)) ? ok(undefined) : err(fehler.unbekannt());
-	},
-
-	/** For the admin: every open Einladung, and withdrawing any of them. */
-	async alleOffenen(now = new Date()) {
-		return await EinladungRepo.listAllOpen(now);
-	},
-
-	async zurueckziehenAlsAdmin(einladungId: string): Promise<Result<void, EinladungError>> {
-		return (await EinladungRepo.deleteOpen(einladungId, null)) ? ok(undefined) : err(fehler.unbekannt());
 	},
 };

@@ -1,5 +1,16 @@
 # @vonall/mcp
 
+## 0.2.0
+
+### Minor Changes
+
+- The pass-through services are gone: `UserRepo.kontoLoeschen` replaces `KontoService.loeschen`; `EinladungRepo.listOpenBy`/`listAllOpen` replace `EinladungService.offene`/`alleOffenen`, and `EinladungService.zurueckziehen(null, id)` the admin's withdrawal; `AgentRepo` replaces `AgentService`. `@vonall/mcp`'s components use `@vonall/auth`'s `messageOf`.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @vonall/auth@0.4.0
+
 ## 0.1.3
 
 ### Patch Changes
