@@ -19,7 +19,7 @@ type BasePlugins = [ReturnType<typeof twoFactorClient>, ReturnType<typeof adminC
 /** The client with this package's plugins and the Product's. */
 export type AuthClient<P extends BetterAuthClientPlugin[] = []> = ReturnType<typeof createClient<{ baseURL: string; plugins: [...BasePlugins, ...P] }>>;
 
-export function createAuthClient<P extends BetterAuthClientPlugin[] = []>({ baseURL, admin = false, plugins }: CreateAuthClientOptions<P>): AuthClient<P> {
+export function createAuthClient<const P extends BetterAuthClientPlugin[] = []>({ baseURL, admin = false, plugins }: CreateAuthClientOptions<P>): AuthClient<P> {
 	return createClient({
 		baseURL: baseURL || "http://localhost:5173",
 		plugins: [twoFactorClient(), ...(admin ? [adminClient({ ac, roles })] : []), ...(plugins ?? [])],

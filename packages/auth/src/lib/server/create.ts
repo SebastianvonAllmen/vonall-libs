@@ -185,7 +185,7 @@ export type CreatedAuth<P extends BetterAuthPlugin[] = []> = {
 	providers: { github: boolean; google: boolean };
 };
 
-export function createAuth<P extends BetterAuthPlugin[] = []>(options: CreateAuthOptions<P>): CreatedAuth<P> {
+export function createAuth<const P extends BetterAuthPlugin[] = []>(options: CreateAuthOptions<P>): CreatedAuth<P> {
 	// Inside, the instance is used with this package's plugins only; the Product gets it with its own plugins' types too
 	const auth = build(options) as unknown as Auth;
 	const { social = {} } = options;

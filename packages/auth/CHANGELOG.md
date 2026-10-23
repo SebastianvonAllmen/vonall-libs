@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.1.2
+
+### Patch Changes
+
+- The plugins passed to `createAuth()` and `createAuthClient()` are inferred as tuples, so `authClient.twoFactor`, `authClient.admin` and the MCP plugins' members type-check in a Product.
+
 ## 0.1.1
 
 ### Patch Changes
