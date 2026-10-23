@@ -1,15 +1,18 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { authRegistry } from "@vonall/auth/server";
-import { createUser, testAuth } from "@vonall/auth/testing";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { createUser as createUserIn, testAuth } from "@vonall/auth/testing";
 import { resetDatabase } from "../../../../../../tooling/db/reset";
 import { testDb } from "../../../../../../tooling/db/testDb";
-import { AgentRepo } from "./AgentRepo";
+import { withMcp } from "#lib/server/context.js";
+import { agentRepo } from "./AgentRepo";
 
 const handle = testDb();
+const ctx = withMcp(testAuth(handle.db).ctx);
+const { db, schema } = ctx;
+const AgentRepo = agentRepo(ctx);
+const createUser = (email?: string) => createUserIn(ctx, email);
 
 /** An assistant registered as an OAuth client, and the user's consent to it. */
 async function connect(userId: string, clientId: string, name: string) {
-	const { db, schema } = authRegistry();
 	const now = new Date();
 	await db.insert(schema.oauthClient).values({ id: crypto.randomUUID(), clientId, name, redirectUris: ["http://localhost/cb"], createdAt: now, updatedAt: now });
 	await db.insert(schema.oauthConsent).values({ id: crypto.randomUUID(), clientId, userId, scopes: ["openid"], createdAt: now, updatedAt: now });
@@ -17,9 +20,6 @@ async function connect(userId: string, clientId: string, name: string) {
 }
 
 describe("AgentRepo", () => {
-	beforeAll(() => {
-		testAuth(handle.db);
-	});
 	afterAll(() => handle.end());
 	beforeEach(resetDatabase);
 
@@ -39,7 +39,6 @@ describe("AgentRepo", () => {
 		await AgentRepo.revoke(lena, "claude");
 		expect(await AgentRepo.hasAccess(lena, "claude")).toBe(false);
 		expect(await AgentRepo.listConnected(lena)).toEqual([]);
-		const { db, schema } = authRegistry();
 		expect(await db.select().from(schema.oauthAccessToken)).toEqual([]);
 	});
 });

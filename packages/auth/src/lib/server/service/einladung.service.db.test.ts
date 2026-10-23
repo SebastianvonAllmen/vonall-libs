@@ -1,20 +1,21 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../../../tooling/db/reset";
 import { testDb } from "../../../../../../tooling/db/testDb";
-import { createUser, testAuth } from "#lib/testing/index.js";
-import { EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
-import { UserRepo } from "#lib/server/repositories/UserRepo.js";
-import { EinladungService } from "./einladung.service";
-
-const allowed = async (token: string | undefined) => (await EinladungService.signup(token)).state === "allowed";
+import { createUser as createUserIn, testAuth } from "#lib/testing/index.js";
+import { einladungRepo } from "#lib/server/repositories/EinladungRepo.js";
+import { userRepo } from "#lib/server/repositories/UserRepo.js";
+import { einladungService } from "./einladung.service";
 
 const TAG = 24 * 60 * 60 * 1000;
 const handle = testDb();
+const { ctx } = testAuth(handle.db);
+const EinladungService = einladungService(ctx);
+const EinladungRepo = einladungRepo(ctx);
+const UserRepo = userRepo(ctx);
+const createUser = (email?: string) => createUserIn(ctx, email);
+const allowed = async (token: string | undefined) => (await EinladungService.signup(token)).state === "allowed";
 
 describe("EinladungService", () => {
-	beforeAll(() => {
-		testAuth(handle.db);
-	});
 	afterAll(() => handle.end());
 	beforeEach(resetDatabase);
 

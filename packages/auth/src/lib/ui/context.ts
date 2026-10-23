@@ -1,10 +1,12 @@
 /**
- * What the auth components need from the Product, set once in its root layout (`setAuthUi({ … })` during component
- * init): the better-auth client (the Product builds it, see `src/lib/auth-client.ts`), the app's name, its locale and
- * signup mode.
+ * What the auth components need: the better-auth client, set once in the Product's root layout (`setAuthUi({ authClient })`
+ * during component init; the Product builds the client, see `src/lib/auth-client.ts`), and the app's name, locale
+ * and signup mode, which this package's loads put into the page data (`authUi` in `authLayoutLoad`, `homeLayoutLoad`,
+ * `einladungLoad`).
  */
 import { getContext, setContext } from "svelte";
-import type { SignupMode } from "#lib/types.js";
+import { page } from "$app/state";
+import type { AuthUiData } from "#lib/server/loads.js";
 
 type Outcome<T = unknown> = Promise<{ data?: T | null; error?: { message?: string; code?: string; status?: number } | null }>;
 type FetchCallbacks = {
@@ -35,23 +37,20 @@ export type AuthClientLike = {
 	unlinkAccount(body: { accountId: string; providerId?: string }): Outcome;
 };
 
-export type AuthUi = {
-	authClient: AuthClientLike;
-	appName: string;
-	/** For dates, e.g. "de-CH". */
-	locale: string;
-	signupMode: SignupMode;
-};
+export type AuthUi = AuthUiData & { authClient: AuthClientLike };
 
 const KEY = Symbol("vonall-auth-ui");
 
 /** In the Product's root layout. */
-export function setAuthUi(ui: AuthUi): AuthUi {
-	return setContext(KEY, ui);
+export function setAuthUi({ authClient }: { authClient: AuthClientLike }): void {
+	setContext(KEY, authClient);
 }
 
+/** In a component: the client, and the app's facts from the page data. */
 export function authUi(): AuthUi {
-	const ui = getContext<AuthUi | undefined>(KEY);
-	if (!ui) throw new Error("@vonall/auth: setAuthUi({ authClient, appName, locale, signupMode }) has not run in the root layout");
-	return ui;
+	const authClient = getContext<AuthClientLike | undefined>(KEY);
+	if (!authClient) throw new Error("@vonall/auth: setAuthUi({ authClient }) has not run in the root layout");
+	const data = (page.data as { authUi?: AuthUiData }).authUi;
+	if (!data) throw new Error("@vonall/auth: this page's data has no `authUi`; its load or its layout's must be one of this package's (authLayoutLoad, homeLayoutLoad, einladungLoad)");
+	return { authClient, ...data };
 }

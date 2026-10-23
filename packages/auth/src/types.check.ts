@@ -12,17 +12,18 @@ import { twoFactor } from "better-auth/plugins/two-factor";
 import { createAuthClient } from "better-auth/svelte";
 import { sveltekitCookies } from "better-auth/svelte-kit";
 import { ac, roles } from "#lib/permissions.js";
-import { authOptions, registerAuth, type CreateAuthOptions } from "#lib/server/create.js";
+import { createAuth, type CreateAuthOptions } from "#lib/server/create.js";
 
 declare const options: CreateAuthOptions;
 const exists = (...members: unknown[]) => members.length;
 
+const wiring = createAuth(options);
 const auth = betterAuth({
-	...authOptions(options),
+	...wiring.options,
 	plugins: [twoFactor(), adminPlugin({ ac, roles }), jwt(), mcp({ loginPage: "/auth/login", consentPage: "/auth/consent", resource: "http://localhost/api/mcp" }), sveltekitCookies(getRequestEvent)],
 });
-const { handle, apiHandler } = registerAuth(auth);
-exists(handle, apiHandler, auth.api.getSession, auth.api.listSessions, auth.api.getOAuthClientPublic, auth.$Infer.Session.user.role, auth.$Infer.Session.user.twoFactorEnabled);
+const { ctx, sessionHandle, apiHandler } = wiring.register(auth);
+exists(ctx.auth, sessionHandle, apiHandler, auth.api.getSession, auth.api.listSessions, auth.api.getOAuthClientPublic, auth.$Infer.Session.user.role, auth.$Infer.Session.user.twoFactorEnabled);
 
 const client = createAuthClient({ baseURL: "http://localhost:5173", plugins: [twoFactorClient(), adminClient({ ac, roles }), oauthProviderClient()] });
 exists(client.twoFactor.enable, client.admin.setRole, client.oauth2.consent, client.signIn.social);

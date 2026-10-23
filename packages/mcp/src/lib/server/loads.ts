@@ -1,6 +1,6 @@
 import { verifyOAuthQueryParams } from "@better-auth/oauth-provider";
 import { error, redirect, type ServerLoadEvent } from "@sveltejs/kit";
-import { authInstance } from "@vonall/auth/server";
+import { contextOf } from "@vonall/auth/server";
 import { m } from "#lib/messages.js";
 
 type Event = Pick<ServerLoadEvent, "locals" | "url" | "request">;
@@ -14,7 +14,7 @@ export type ConsentData = { clientName: string; clientUri: string | null; backTo
  */
 export async function consentLoad({ url, locals, request }: Event): Promise<ConsentData> {
 	if (!locals.session) throw redirect(302, `/auth/login${url.search}`);
-	const auth = authInstance();
+	const { auth } = contextOf(locals);
 	const query = url.search.slice(1);
 	const { secret } = await auth.$context;
 	if (!(await verifyOAuthQueryParams(query, secret))) {

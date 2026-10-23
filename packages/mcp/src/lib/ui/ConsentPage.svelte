@@ -4,6 +4,7 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { messageOf } from "@vonall/auth";
+	import { authUi } from "@vonall/auth/ui";
 	import { m } from "#lib/messages.js";
 	import type { ConsentData } from "#lib/server/loads.js";
 
@@ -14,7 +15,8 @@
 	 * The consent screen of an MCP client authorisation (`consentLoad` gives `data`). `children` lists what the assistant
 	 * may do, in the Product's words.
 	 */
-	let { data, authClient, appName, children }: { data: ConsentData; authClient: ConsentClient; appName: string; children?: Snippet } = $props();
+	let { data, authClient, children }: { data: ConsentData; authClient: ConsentClient; children?: Snippet } = $props();
+	const { appName } = authUi();
 	let busy = $state(false);
 
 	async function answer(accept: boolean) {
