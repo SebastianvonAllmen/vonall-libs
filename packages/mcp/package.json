@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/mcp",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "The MCP endpoint of a Web App Factory Product: JSON-RPC with tools and prompts, OAuth for AI assistants through better-auth, the consent page and the Agents tab",
 	"license": "MIT",
 	"repository": {
@@ -62,7 +62,10 @@
 		"drizzle-orm": "^0.45.4",
 		"pg": "^8.23.1",
 		"svelte": "^5.57.2",
-		"zod": "^4.6.7"
+		"zod": "^4.6.7",
+		"svelte-sonner": "^1.2.1",
+		"bits-ui": "^2.19.5",
+		"@lucide/svelte": "^1.22.0"
 	},
 	"devDependencies": {
 		"@sveltejs/kit": "^3.1.0",
@@ -79,7 +82,10 @@
 		"typescript": "^6.0.3",
 		"vite": "8.3.4",
 		"vitest": "^5.0.5",
-		"zod": "^4.6.7"
+		"zod": "^4.6.7",
+		"svelte-sonner": "^1.2.1",
+		"bits-ui": "^2.19.5",
+		"@lucide/svelte": "^1.22.0"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",
@@ -95,12 +101,9 @@
 		"@better-auth/cimd": "^1.7.12",
 		"@better-auth/mcp": "^1.7.12",
 		"@better-auth/oauth-provider": "^1.7.12",
-		"@lucide/svelte": "1.22.0",
 		"@vonall/auth": "workspace:^",
 		"better-auth": "^1.7.12",
-		"bits-ui": "^2.20.2",
 		"clsx": "^2.1.1",
-		"svelte-sonner": "^1.2.1",
 		"tailwind-merge": "^3.7.0",
 		"tailwind-variants": "^3.3.1"
 	}
