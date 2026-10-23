@@ -47,6 +47,21 @@ Strings come in English and German: `configureAuthMessages({ locale, overrides }
 reference `user.id` with `onDelete: "cascade"`, so deleting a Konto takes everything with it. The MCP endpoint's
 better-auth plugins and rate limit rule come from `@vonall/mcp` through `plugins` and `rateLimitRules`.
 
+## A Product's own fields of a person
+
+Two patterns. Anything with its own life (a profile, preferences, a membership) is the Product's own table with
+`userId` → `user.id`, `onDelete: "cascade"`, edited through its own remote function; the `profile` snippet of
+`SettingsPage` puts that form below name and email, or `extraTabs` gives it a tab. What better-auth should set at
+signup is a column on `user`:
+
+```ts
+export const schema = authSchema({ admin: true, user: { phone: text("phone") } });        // the column (and a migration)
+createAuth({ …, userFields: { phone: { type: "string", required: false } } });             // better-auth takes it at signup and in updateUser
+createAuthClient({ plugins: [inferAdditionalFields({ user: { phone: { type: "string" } } }), …] });  // the browser client's types
+```
+
+`userRepo(ctx)` selects every column, so the admin's list and the profile carry the Product's too.
+
 ## The pages and the settings (`@vonall/auth/ui`)
 
 ```svelte
@@ -61,7 +76,7 @@ better-auth plugins and rate limit rule come from `@vonall/mcp` through `plugins
 <!-- src/routes/auth/signup/+page.svelte -->  <RegisterForm />
 <!-- src/routes/auth/reset-password -->       <ResetPasswordForm />
 <!-- src/routes/einladung/[token] -->         <EinladungPage {data} tagline={APP_TAGLINE} />
-<!-- src/routes/home/settings -->             <SettingsPage extraTabs={[agentsTab()]}>{#snippet extra(id)}…{/snippet}</SettingsPage>
+<!-- src/routes/home/settings -->             <SettingsPage extraTabs={[agentsTab()]}>{#snippet profile()}…{/snippet}{#snippet extra(id)}…{/snippet}</SettingsPage>
 <!-- src/routes/home/manage_user -->          <AdminView currentUserId={data.currentUserId} />
 ```
 
@@ -69,3 +84,6 @@ The components read `page.data` as the loads of this package fill it (`providers
 `session`, `einladen`), use the `.panel` and `.section-kicker` classes of the Factory's `app.css`, and ship their own
 copies of the shadcn-svelte avatar, button, card, input, label and tabs; the Product's `app.css` adds
 `@source "../node_modules/@vonall/auth/dist"`.
+
+The components read the page data of this package's loads through `authPageData("providers", …)` (typed `AuthPageData`;
+a missing key throws with the load to use), so a Product's own component beside them can do the same.

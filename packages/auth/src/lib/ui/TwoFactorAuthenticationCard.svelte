@@ -1,17 +1,16 @@
 <script lang="ts">
 	import { Check, Copy, Shield, ShieldAlert, ShieldCheck } from "@lucide/svelte";
-	import { page } from "$app/state";
 	import { toast } from "svelte-sonner";
 	import { renderSVG } from "uqr";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { m } from "#lib/messages.js";
-	import { authUi } from "#lib/ui/context.js";
+	import { authPageData, authUi } from "#lib/ui/context.js";
 	import { messageOf } from "#lib/util/messageOf.js";
 
 	const { authClient } = authUi();
-	const user = $derived(page.data.user as { twoFactorEnabled?: boolean | null } | undefined);
+	const { user } = $derived(authPageData("user"));
 
 	let twoFAInputPassword = $state("");
 	let twoFATOTPCode = $state("");

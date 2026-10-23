@@ -11,8 +11,8 @@
 	import { href } from "#lib/ui/href.js";
 	import { messageOf } from "#lib/util/messageOf.js";
 
-	/** Deleting the own account; `agents` adds the sentence about connected AI assistants (the MCP endpoint). */
-	let { agents = false }: { agents?: boolean } = $props();
+	/** Deleting the own account; `notes` are the sentences other tabs add about what goes with it (`SettingsTabDef.deletionNote`). */
+	let { notes = [] }: { notes?: string[] } = $props();
 	const { authClient } = authUi();
 
 	let confirmationText = $state("");
@@ -54,7 +54,9 @@
 					<h4 class="mb-1 font-semibold">{m().cannotBeUndone}</h4>
 					<p>
 						{m().deletionText}
-						{#if agents}{m().deletionAgents}{/if}
+						{#each notes as note (note)}
+							{note}
+						{/each}
 						{m().deletionNoLogin}
 					</p>
 				</div>

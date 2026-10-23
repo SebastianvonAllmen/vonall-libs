@@ -5,8 +5,7 @@
 	import { page } from "$app/state";
 	import * as Tabs from "#lib/components/ui/tabs/index.js";
 	import { m } from "#lib/messages.js";
-	import type { AppUserClient } from "#lib/types.js";
-	import { authUi } from "#lib/ui/context.js";
+	import { authPageData, authUi } from "#lib/ui/context.js";
 	import DeletionTab from "#lib/ui/DeletionTab.svelte";
 	import InvitationsTab from "#lib/ui/InvitationsTab.svelte";
 	import LinksTab from "#lib/ui/LinksTab.svelte";
@@ -21,13 +20,13 @@
 	/**
 	 * The settings page (`homeLayoutLoad` gives `user`, `session`, `providers` and `einladen` in the page data): on
 	 * desktop a tab bar, on mobile a menu and one tab at a time, `?tab=` either way. A Product adds its own tabs with
-	 * `extraTabs` (their definitions) and `extra` (their content, given the tab id), e.g. the AI assistants of `@vonall/mcp`.
+	 * `extraTabs` (their definitions) and `extra` (their content, given the tab id), e.g. the AI assistants of `@vonall/mcp`;
+	 * `profile` renders below the name and email form, for the Product's own fields of a person.
 	 */
-	let { extraTabs = [], extra }: { extraTabs?: SettingsTabDef[]; extra?: Snippet<[string]> } = $props();
+	let { extraTabs = [], extra, profile }: { extraTabs?: SettingsTabDef[]; extra?: Snippet<[string]>; profile?: Snippet } = $props();
 	const { appName, locale } = authUi();
 
-	const user = $derived(page.data.user as AppUserClient);
-	const einladen = $derived(Boolean(page.data.einladen));
+	const { user, einladen } = $derived(authPageData("user", "einladen"));
 	// Only the tabs this user sees: ?tab=invitations without the right to invite falls back to the profile
 	const tabs = $derived(visibleTabs(einladen, extraTabs));
 	const ids = $derived(tabs.map((t) => t.id));
@@ -81,7 +80,7 @@
 	</div>
 
 	<div class={hasTabParam ? "mt-4 block w-full" : "mt-4 hidden w-full md:block"}>
-		<ProfileManagementTab {user} />
+		<ProfileManagementTab {user}>{@render profile?.()}</ProfileManagementTab>
 		<SecurityTab />
 		<!-- Only while open: listing the sessions needs a login from the last day, which only this tab should ask for -->
 		{#if activeTab === "sessions"}<SessionsTab />{/if}
@@ -90,6 +89,6 @@
 		{#each extraTabs as tab (tab.id)}
 			<Tabs.Content value={tab.id} class="panel mt-6 p-6 md:p-8">{@render extra?.(tab.id)}</Tabs.Content>
 		{/each}
-		<DeletionTab agents={extraTabs.some((t) => t.id === "agents")} />
+		<DeletionTab notes={extraTabs.map((t) => t.deletionNote).filter((n): n is string => Boolean(n))} />
 	</div>
 </Tabs.Root>

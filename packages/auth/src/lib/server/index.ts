@@ -13,7 +13,7 @@ export {
 	requireAdmin,
 	requireUser,
 } from "#lib/server/helpers.js";
-export { authLayoutLoad, einladungLoad, homeLayoutLoad, loginLoad, manageUserLoad, signupLoad, type AuthUiData } from "#lib/server/loads.js";
+export { authLayoutLoad, einladungLoad, homeLayoutLoad, loginLoad, manageUserLoad, signupLoad, type AuthPageData, type AuthUiData } from "#lib/server/loads.js";
 export { einladungRepo, type EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 export { userRepo, type UserRepo } from "#lib/server/repositories/UserRepo.js";
 export { EINLADUNG_COOKIE, EINLADUNG_GUELTIG_TAGE, einladungService, type EinladungError, type EinladungService } from "#lib/server/service/einladung.service.js";

@@ -4,13 +4,20 @@
  * `@vonall/mcp` package uses. A Product builds them once in its `src/lib/remote/schema/auth.sql.ts`, re-exports them so
  * drizzle-kit sees them, and generates its own migrations (`schema:` releases of this package say when).
  */
-import { bigint, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import type { BuildColumns } from "drizzle-orm";
+import { bigint, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, type AnyPgColumn, type PgColumnBuilderBase, type PgTableWithColumns } from "drizzle-orm/pg-core";
 
-export type SchemaOptions = {
+/** A Product's own columns on `user` (`{ phone: text("phone") }`); better-auth learns them through `createAuth({ userFields })`. */
+export type UserExtra = Record<string, PgColumnBuilderBase>;
+type NoExtra = Record<never, never>;
+
+export type SchemaOptions<A extends boolean = boolean, M extends boolean = boolean, U extends UserExtra = NoExtra> = {
 	/** The Admin option: `role`, `banned`, `banReason`, `banExpires` on `user`, `impersonatedBy` on `session`. */
-	admin?: boolean;
+	admin?: A;
 	/** The tables of the OAuth provider for the MCP endpoint (`@vonall/mcp`). */
-	mcp?: boolean;
+	mcp?: M;
+	/** The Product's own columns on `user`, for what better-auth sets at signup; anything with its own life gets its own table. */
+	user?: U;
 };
 
 const userColumns = () => ({
@@ -31,12 +38,16 @@ const adminColumns = () => ({
 	banExpires: timestamp("ban_expires", { precision: 6, withTimezone: true }),
 });
 
-const buildUser = () => pgTable("user", userColumns());
-const buildUserAdmin = () => pgTable("user", { ...userColumns(), ...adminColumns() });
-export type UserTable = ReturnType<typeof buildUser>;
-export type UserAdminTable = ReturnType<typeof buildUserAdmin>;
+type TableOf<Name extends string, C extends Record<string, PgColumnBuilderBase>> = PgTableWithColumns<{ name: Name; schema: undefined; columns: BuildColumns<Name, C, "pg">; dialect: "pg" }>;
+export type UserTable<U extends UserExtra = NoExtra> = TableOf<"user", ReturnType<typeof userColumns> & U>;
+export type UserAdminTable<U extends UserExtra = NoExtra> = TableOf<"user", ReturnType<typeof userColumns> & ReturnType<typeof adminColumns> & U>;
+const buildUser = <U extends UserExtra>(extra: U): UserTable<U> => pgTable("user", { ...userColumns(), ...extra });
+const buildUserAdmin = <U extends UserExtra>(extra: U): UserAdminTable<U> => pgTable("user", { ...userColumns(), ...adminColumns(), ...extra });
 
-const sessionColumns = (user: UserTable) => ({
+/** What the other tables need of `user`: its id to reference. */
+type UserRef = { id: AnyPgColumn };
+
+const sessionColumns = (user: UserRef) => ({
 	id: text("id").primaryKey(),
 	expiresAt: timestamp("expires_at").notNull(),
 	token: text("token").notNull().unique(),
@@ -48,12 +59,12 @@ const sessionColumns = (user: UserTable) => ({
 		.notNull()
 		.references(() => user.id, { onDelete: "cascade" }),
 });
-const buildSession = (user: UserTable) => pgTable("session", sessionColumns(user));
-const buildSessionAdmin = (user: UserTable) => pgTable("session", { ...sessionColumns(user), impersonatedBy: text("impersonated_by") });
+const buildSession = (user: UserRef) => pgTable("session", sessionColumns(user));
+const buildSessionAdmin = (user: UserRef) => pgTable("session", { ...sessionColumns(user), impersonatedBy: text("impersonated_by") });
 export type SessionTable = ReturnType<typeof buildSession>;
 export type SessionAdminTable = ReturnType<typeof buildSessionAdmin>;
 
-function buildShared(user: UserTable) {
+function buildShared(user: UserRef) {
 	const account = pgTable("account", {
 		id: text("id").primaryKey(),
 		accountId: text("account_id").notNull(),
@@ -122,7 +133,7 @@ function buildShared(user: UserTable) {
 	return { account, verification, twoFactor, rateLimit, einladung };
 }
 
-function buildMcp(user: UserTable, session: SessionTable) {
+function buildMcp(user: UserRef, session: SessionTable) {
 	/** Signing keys of the OAuth provider (better-auth `jwt` plugin); MCP access tokens are JWTs signed with them. */
 	const jwks = pgTable("jwks", {
 		id: text("id").primaryKey(),
@@ -310,19 +321,20 @@ export type SharedTables = ReturnType<typeof buildShared>;
 export type McpTables = ReturnType<typeof buildMcp>;
 
 /** The tables for the options given: `user` and `session` with or without the admin columns, the `mcp` tables or not. */
-export type AuthSchema<A extends boolean = boolean, M extends boolean = boolean> = SharedTables & {
-	user: A extends true ? UserAdminTable : UserTable;
+export type AuthSchema<A extends boolean = boolean, M extends boolean = boolean, U extends UserExtra = NoExtra> = SharedTables & {
+	user: A extends true ? UserAdminTable<U> : UserTable<U>;
 	session: A extends true ? SessionAdminTable : SessionTable;
 } & (M extends true ? McpTables : Record<never, never>);
 
 /** Every table with every option: what the package's own code is typed against (an option that is off leaves its columns unused). */
 export type FullSchema = AuthSchema<true, true>;
 
-export function authSchema<A extends boolean = false, M extends boolean = false>(options: { admin?: A; mcp?: M } = {}): AuthSchema<A, M> {
+export function authSchema<A extends boolean = false, M extends boolean = false, U extends UserExtra = NoExtra>(options: SchemaOptions<A, M, U> = {}): AuthSchema<A, M, U> {
 	const admin = options.admin ?? false;
 	const mcp = options.mcp ?? false;
-	const user: UserTable = admin ? buildUserAdmin() : buildUser();
+	const extra = options.user ?? ({} as U);
+	const user = admin ? buildUserAdmin(extra) : buildUser(extra);
 	const session: SessionTable = admin ? buildSessionAdmin(user) : buildSession(user);
 	const tables = { user, session, ...buildShared(user), ...(mcp ? buildMcp(user, session) : {}) };
-	return tables as unknown as AuthSchema<A, M>;
+	return tables as unknown as AuthSchema<A, M, U>;
 }

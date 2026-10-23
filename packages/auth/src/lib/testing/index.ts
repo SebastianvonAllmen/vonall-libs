@@ -19,10 +19,10 @@ export async function createUser(ctx: AuthContext, email = "user@example.com"): 
 }
 
 /** The wiring with test values: every option on, mail off, unless overridden; as a Product's `src/lib/auth.ts` does it. */
-export function testAuth(db: Db, overrides: Partial<CreateAuthOptions<AuthSchema<true, true>>> = {}) {
-	const wiring = createAuth({
+export function testAuth<S extends AuthSchema = AuthSchema<true, true>>(db: Db, overrides: Partial<CreateAuthOptions<S>> = {}) {
+	const wiring = createAuth<S>({
 		db,
-		schema: authSchema({ admin: true, mcp: true }),
+		schema: authSchema({ admin: true, mcp: true }) as unknown as S,
 		secret: "test-secret-for-the-db-tests-only",
 		origin: "http://localhost:5173",
 		appName: "Test",

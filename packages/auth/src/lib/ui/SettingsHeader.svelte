@@ -1,10 +1,10 @@
 <script lang="ts">
 	import * as Avatar from "#lib/components/ui/avatar/index.js";
 	import { m } from "#lib/messages.js";
-	import type { AppUserClient } from "#lib/types.js";
+	import type { SessionUser } from "#lib/types.js";
 	import { displayInitials, displayName } from "#lib/util/names.js";
 
-	let { user }: { user: AppUserClient | null | undefined } = $props();
+	let { user }: { user: SessionUser | null | undefined } = $props();
 </script>
 
 <div class="flex items-center gap-6">

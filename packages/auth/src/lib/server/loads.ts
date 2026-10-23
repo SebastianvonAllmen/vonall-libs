@@ -7,7 +7,7 @@ import { error, redirect, type ServerLoadEvent } from "@sveltejs/kit";
 import { m } from "#lib/messages.js";
 import { contextOf, type AuthContext } from "#lib/server/context.js";
 import { EINLADUNG_COOKIE, einladungService } from "#lib/server/service/einladung.service.js";
-import type { SignupMode } from "#lib/types.js";
+import type { SessionUser, SignupMode, SignupState } from "#lib/types.js";
 import { isStale, SESSION_NOT_FRESH } from "#lib/util/fresh.js";
 import { sameSitePath } from "#lib/util/sameSite.js";
 import { isAdmin, mayInvite } from "#lib/util/signup.js";
@@ -17,12 +17,31 @@ type Event = Pick<ServerLoadEvent, "locals" | "url" | "request" | "cookies" | "p
 /** What the components read from the page data (`authUi()` in `@vonall/auth/ui`). */
 export type AuthUiData = { appName: string; locale: string; signupMode: SignupMode };
 
+/**
+ * Everything this package's loads put into the page data; each load returns its slice (`satisfies`), the components
+ * read it through `authPageData()` in `@vonall/auth/ui`, so a changed load fails their check.
+ */
+export type AuthPageData = {
+	authUi: AuthUiData;
+	/** The social logins that have keys. */
+	providers: { github: boolean; google: boolean };
+	/** Whether the server can send mail (the password reset link shows only then). */
+	mail: boolean;
+	state: SignupState;
+	einladung: { inviterName: string } | null;
+	user: SessionUser;
+	/** The session without its token. */
+	session: { id: string; expiresAt: Date };
+	/** Whether the user may create Einladungen (the Invitations tab shows). */
+	einladen: boolean;
+};
+
 const uiData = ({ appName, locale, signupMode }: AuthContext): AuthUiData => ({ appName, locale, signupMode });
 
 /** `/auth`: which social logins have keys, and whether a password reset mail can be sent (the link is hidden otherwise). */
 export async function authLayoutLoad({ locals }: Event) {
 	const ctx = contextOf(locals);
-	return { providers: ctx.providers, mail: ctx.mailer.enabled, authUi: uiData(ctx) };
+	return { providers: ctx.providers, mail: ctx.mailer.enabled, authUi: uiData(ctx) } satisfies Pick<AuthPageData, "providers" | "mail" | "authUi">;
 }
 
 /** `/auth/login`. */
@@ -50,7 +69,7 @@ export async function signupLoad({ locals, cookies }: Event) {
 	if (locals.session) throw redirect(302, "/home");
 	const ctx = contextOf(locals);
 	const { state, einladung } = await einladungService(ctx).signup(cookies.get(EINLADUNG_COOKIE));
-	return { state, mode: ctx.signupMode, einladung: einladung ? { inviterName: einladung.inviterName } : null };
+	return { state, einladung: einladung ? { inviterName: einladung.inviterName } : null } satisfies Pick<AuthPageData, "state" | "einladung">;
 }
 
 /**
@@ -81,11 +100,11 @@ export async function einladungLoad({ params, cookies, locals, url }: Event) {
 export function homeLayoutLoad({ locals }: Event) {
 	if (!locals.session || !locals.user) throw redirect(302, "/auth/login");
 	const ctx = contextOf(locals);
-	const user = { ...locals.user };
+	const user: SessionUser = { ...locals.user };
 	// Never the session token itself: page data ends up in the HTML and in client JS
 	const session = { id: locals.session.id, expiresAt: locals.session.expiresAt };
 	// Whether the Invitations tab shows: the signup mode decides who creates Einladungen
-	return { user, session, providers: ctx.providers, einladen: mayInvite(ctx.signupMode, isAdmin(locals.user)), authUi: uiData(ctx) };
+	return { user, session, providers: ctx.providers, einladen: mayInvite(ctx.signupMode, isAdmin(locals.user)), authUi: uiData(ctx) } satisfies Pick<AuthPageData, "user" | "session" | "providers" | "einladen" | "authUi">;
 }
 
 /** `/home/manage_user` (the Admin option): admins only. */

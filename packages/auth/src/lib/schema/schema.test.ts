@@ -1,4 +1,5 @@
 import { getTableColumns, getTableName } from "drizzle-orm";
+import { text } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import { authSchema } from "./index";
 
@@ -25,5 +26,11 @@ describe("authSchema", () => {
 			expect.arrayContaining(["jwks", "oauthClient", "oauthResource", "oauthClientResource", "oauthRefreshToken", "oauthAccessToken", "oauthConsent", "oauthClientAssertion"]),
 		);
 		expect(getTableName(withMcp.oauthClient)).toBe("oauth_client");
+	});
+
+	it("takes a Product's own columns on user", () => {
+		const s = authSchema({ admin: true, user: { phone: text("phone") } });
+		expect(Object.keys(getTableColumns(s.user))).toEqual(expect.arrayContaining(["id", "role", "phone"]));
+		expect(s.user.phone.name).toBe("phone");
 	});
 });

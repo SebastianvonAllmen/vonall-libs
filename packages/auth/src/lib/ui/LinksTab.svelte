@@ -7,14 +7,14 @@
 	import * as Tabs from "#lib/components/ui/tabs/index.js";
 	import { m } from "#lib/messages.js";
 	import { getLinkedAccounts } from "#lib/remote/app_user.remote.js";
-	import { authUi } from "#lib/ui/context.js";
+	import { authPageData, authUi } from "#lib/ui/context.js";
 	import IconGithub from "#lib/ui/IconGithub.svelte";
 	import IconGoogle from "#lib/ui/IconGoogle.svelte";
 	import { isSessionNotFresh, reauthPath } from "#lib/util/fresh.js";
 
 	const { authClient } = authUi();
 	const linkedAccounts = $derived(getLinkedAccounts());
-	const providersData = $derived(page.data.providers as { github?: boolean; google?: boolean } | undefined);
+	const providersData = $derived(authPageData("providers").providers);
 
 	const providers = $derived([
 		...(providersData?.github ? [{ id: "github", name: "GitHub", component: IconGithub }] : []),

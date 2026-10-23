@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { LoaderCircle } from "@lucide/svelte";
 	import { goto } from "$app/navigation";
-	import { page } from "$app/state";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { m } from "#lib/messages.js";
-	import type { SignupState } from "#lib/types.js";
-	import { authUi } from "#lib/ui/context.js";
+	import { authPageData, authUi } from "#lib/ui/context.js";
 	import { href } from "#lib/ui/href.js";
 	import SocialButton from "#lib/ui/SocialButton.svelte";
 	import { cn } from "#lib/utils.js";
@@ -23,12 +21,12 @@
 	let loading = $state(false);
 	let errorMessage = $state("");
 
-	const providers = $derived(page.data.providers as { github?: boolean; google?: boolean } | undefined);
-	const signupState = $derived(page.data.state as SignupState);
+	const providers = $derived(authPageData("providers").providers);
+	const signupState = $derived(authPageData("state").state);
 	const erlaubt = $derived(signupState === "allowed");
 	/** After signing up without a session (signup mode open): confirm by mail first, or (first account) log in. */
 	let done = $state<"confirm" | "login" | null>(null);
-	const einladung = $derived(page.data.einladung as { inviterName: string } | null);
+	const einladung = $derived(authPageData("einladung").einladung);
 	const providerNames = $derived([providers?.github && "GitHub", providers?.google && "Google"].filter(Boolean).join(` ${m().or} `));
 
 	async function signUp(e: SubmitEvent) {

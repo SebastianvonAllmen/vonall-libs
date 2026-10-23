@@ -22,6 +22,7 @@ export const en = {
 	// The Agents tab
 	tabAgents: "AI assistants",
 	tabAgentsHint: "Assistants connected through MCP",
+	deletionNote: "Connected AI assistants lose their access.",
 	agentsTitle: "AI assistants",
 	agentsIntro: "Assistants you connected through MCP work with your data under the same rules as you in the app.",
 	unnamedAssistant: "Unnamed assistant",
@@ -63,6 +64,7 @@ export const de: McpMessages = {
 	didntWork: "Das hat nicht geklappt.",
 	tabAgents: "KI-Assistenten",
 	tabAgentsHint: "Über MCP verbundene Assistenten",
+	deletionNote: "Verbundene KI-Assistenten verlieren ihren Zugriff.",
 	agentsTitle: "KI-Assistenten",
 	agentsIntro: "Assistenten, die du über MCP verbunden hast, arbeiten mit deinen Daten nach denselben Regeln wie du in der App.",
 	unnamedAssistant: "Assistent ohne Namen",
