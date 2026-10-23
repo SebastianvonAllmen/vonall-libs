@@ -105,6 +105,11 @@ export default ts.config(
 		},
 	},
 	{
+		// The shell links to the Product's pages by the paths its nav.ts gives (strings), prefixed with base
+		files: ["packages/shell/src/lib/**/*.svelte"],
+		rules: { "svelte/no-navigation-without-resolve": "off" },
+	},
+	{
 		// SvelteKit's App namespace (Locals, Error, …) is extended by declaration merging, which needs interfaces
 		files: ["packages/*/src/app.d.ts"],
 		rules: { "@typescript-eslint/consistent-type-definitions": "off" },
