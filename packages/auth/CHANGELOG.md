@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.2.0
+
+### Minor Changes
+
+- The Product builds the better-auth instance and client itself, so their types are inferred where they are used: `betterAuth({ ...authOptions({…}), plugins: [twoFactor(), admin({ ac, roles }), …, sveltekitCookies(getRequestEvent)] })`, then `registerAuth(auth)` for the session handle and the API handler; `createAuth()`, `createAuthClient()` and the `./client` entry are gone.
+
 ## 0.1.2
 
 ### Patch Changes

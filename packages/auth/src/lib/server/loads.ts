@@ -4,7 +4,7 @@
  */
 import { error, redirect, type ServerLoadEvent } from "@sveltejs/kit";
 import { m } from "#lib/messages.js";
-import { registry } from "#lib/server/registry.js";
+import { authInstance, registry } from "#lib/server/registry.js";
 import { EINLADUNG_COOKIE, EinladungService } from "#lib/server/service/einladung.service.js";
 import { isStale, SESSION_NOT_FRESH } from "#lib/util/fresh.js";
 import { sameSitePath } from "#lib/util/sameSite.js";
@@ -20,7 +20,7 @@ export async function authLayoutLoad() {
 
 /** `/auth/login`. */
 export async function loginLoad({ locals, url, request }: Event) {
-	const { auth } = registry();
+	const auth = authInstance();
 	// An action refused the session as too old to be trusted (reauthPath): sign it out, so the form shows. Only a session
 	// that really is that old, so a link can't log anyone out.
 	if (locals.session && url.searchParams.get("error") === SESSION_NOT_FRESH.toLowerCase()) {

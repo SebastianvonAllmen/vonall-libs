@@ -1,11 +1,12 @@
 /**
- * `createAuth()`: better-auth for a Product, from explicit options. The Product's `src/lib/auth.ts` calls it once with
- * its database, its tables (`authSchema`), its env and config; everything else in this package reads the result.
+ * better-auth for a Product, from explicit options. The Product's `src/lib/auth.ts` builds the instance itself, so its
+ * types are inferred in the Product (its plugins included): `betterAuth({ ...authOptions({…}), plugins: […] })`, then
+ * `registerAuth(auth)` for the session handle and the API handler; everything else in this package reads the result.
  */
 import type { RequestHandler } from "@sveltejs/kit";
 import type { Handle } from "@sveltejs/kit/hooks";
 import { getRequestEvent } from "$app/server";
-import { betterAuth, type BetterAuthPlugin } from "better-auth";
+import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { admin as adminPlugin } from "better-auth/plugins";
@@ -16,7 +17,7 @@ import { m } from "#lib/messages.js";
 import { roles, ac } from "#lib/permissions.js";
 import type { AuthSchema, FullSchema } from "#lib/schema/index.js";
 import { hashPassword, verifyPassword } from "#lib/server/crypto.js";
-import { consoleLog, setRegistry, type AuthLog, type Db } from "#lib/server/registry.js";
+import { consoleLog, registry, setRegistry, type AuthLog, type Db } from "#lib/server/registry.js";
 import { UserRepo } from "#lib/server/repositories/UserRepo.js";
 import { EINLADUNG_COOKIE, EinladungService } from "#lib/server/service/einladung.service.js";
 import { sendPasswordResetEmail, sendVerifyEmail } from "#lib/server/service/mail.js";
@@ -25,7 +26,7 @@ import { nameFromEmail } from "#lib/util/names.js";
 
 export type SocialProvider = { clientId: string; clientSecret: string };
 
-export type CreateAuthOptions<P extends BetterAuthPlugin[] = []> = {
+export type CreateAuthOptions = {
 	/** The Product's Drizzle database. */
 	db: Db;
 	/** The Product's tables from `authSchema()`, the same objects its `schema/` re-exports. */
@@ -44,8 +45,6 @@ export type CreateAuthOptions<P extends BetterAuthPlugin[] = []> = {
 	admin?: boolean;
 	/** Social logins with keys; a provider without keys is left out (its button never shows). */
 	social?: { github?: SocialProvider | null; google?: SocialProvider | null };
-	/** More better-auth plugins, e.g. the MCP endpoint's (`@vonall/mcp`); they are part of the instance's type. */
-	plugins?: P;
 	/** More rate limit rules, by path (`@vonall/mcp` adds `/oauth2/register`). */
 	rateLimitRules?: Record<string, { window: number; max: number }>;
 	log?: AuthLog;
@@ -67,8 +66,13 @@ const hasKeys = (p: SocialProvider | null | undefined): p is SocialProvider => B
  * plugin is in it whether or not the option is on, so `user.role` exists; without the option it is left out at runtime
  * and nobody has a role.
  */
-type BasePlugins = [ReturnType<typeof twoFactor>, ReturnType<typeof adminPlugin<{ ac: typeof ac; roles: typeof roles }>>];
-export type Auth<P extends BetterAuthPlugin[] = []> = ReturnType<typeof betterAuth<{ plugins: [...BasePlugins, ...P, ReturnType<typeof sveltekitCookies>] }>>;
+type BasePlugins = [ReturnType<typeof twoFactor>, ReturnType<typeof adminPlugin<{ ac: typeof ac; roles: typeof roles }>>, ReturnType<typeof sveltekitCookies>];
+export type Auth<P extends BetterAuthPlugin[] = []> = ReturnType<typeof betterAuth<{ plugins: [...BasePlugins, ...P] }>>;
+/**
+ * The Product's instance as `registerAuth()` takes it: built on `authOptions()`, with any plugins (their types stay the
+ * Product's; this package uses the instance through its own `Auth` type).
+ */
+export type AuthLike = { handler: (request: Request) => Promise<Response>; api: object; $context: Promise<object> };
 
 /** The admin plugin's columns, named here because the plugin's type doesn't carry them into the session's user. */
 export type AdminFields = { role?: string | null; banned?: boolean | null; banReason?: string | null; banExpires?: Date | null };
@@ -76,10 +80,23 @@ export type AdminFields = { role?: string | null; banned?: boolean | null; banRe
 export type AuthUser = Auth["$Infer"]["Session"]["user"] & AdminFields;
 export type AuthSession = Auth["$Infer"]["Session"]["session"];
 
-function build<P extends BetterAuthPlugin[]>(options: CreateAuthOptions<P>): Auth<P> {
-	const { secret, origin, appName, signupMode, admin = false, social = {}, plugins, rateLimitRules = {}, log = consoleLog } = options;
+export function authOptions(options: CreateAuthOptions): BetterAuthOptions {
+	const { secret, origin, appName, signupMode, admin = false, social = {}, rateLimitRules = {}, log = consoleLog } = options;
+	setRegistry({
+		db: options.db,
+		schema: options.schema as FullSchema,
+		appName,
+		origin,
+		locale: options.locale,
+		signupMode,
+		mailer: options.mailer,
+		admin,
+		log,
+		auth: null,
+		providers: { github: hasKeys(social.github), google: hasKeys(social.google) },
+	});
 	const baseURL = origin || "http://localhost";
-	return betterAuth({
+	return {
 		appName,
 		baseURL,
 		secret: secret || "dummy-secret-for-build-purposes-only",
@@ -165,18 +182,10 @@ function build<P extends BetterAuthPlugin[]>(options: CreateAuthOptions<P>): Aut
 			// an admin) and a ban count at once instead of after up to 5 minutes; for a small app that one query is nothing
 			cookieCache: { enabled: false },
 		},
-		plugins: [
-			twoFactor(),
-			...(admin ? [adminPlugin({ ac, roles })] : []),
-			...(plugins ?? []),
-			sveltekitCookies(getRequestEvent), // Ensure cookies are populated in SvelteKit
-		],
-	}) as unknown as Auth<P>;
+	};
 }
 
-export type CreatedAuth<P extends BetterAuthPlugin[] = []> = {
-	/** The better-auth instance: `auth.api`, `auth.handler`, `auth.$context`. */
-	auth: Auth<P>;
+export type RegisteredAuth = {
 	/** The hooks handle: the session into `locals.user`/`locals.session`, and better-auth's own routes (/api/auth/*). */
 	handle: Handle;
 	/** For `src/routes/api/auth/[...auth]/+server.ts`: `export const GET = apiHandler, POST = apiHandler`. */
@@ -185,32 +194,20 @@ export type CreatedAuth<P extends BetterAuthPlugin[] = []> = {
 	providers: { github: boolean; google: boolean };
 };
 
-export function createAuth<const P extends BetterAuthPlugin[] = []>(options: CreateAuthOptions<P>): CreatedAuth<P> {
-	// Inside, the instance is used with this package's plugins only; the Product gets it with its own plugins' types too
-	const auth = build(options) as unknown as Auth;
-	const { social = {} } = options;
-	setRegistry({
-		db: options.db,
-		schema: options.schema as FullSchema,
-		appName: options.appName,
-		origin: options.origin,
-		locale: options.locale,
-		signupMode: options.signupMode,
-		mailer: options.mailer,
-		admin: options.admin ?? false,
-		log: options.log ?? consoleLog,
-		auth,
-		providers: { github: hasKeys(social.github), google: hasKeys(social.google) },
-	});
+/** Hands the Product's instance to this package (after `authOptions()`) and returns the handles. */
+export function registerAuth(auth: AuthLike): RegisteredAuth {
+	const current = registry();
+	setRegistry({ ...current, auth: auth as Auth });
+	const instance = auth as Auth;
 	const handle: Handle = async ({ event, resolve }) => {
-		const current = await auth.api.getSession({ headers: event.request.headers });
-		if (current) {
-			event.locals.session = current.session;
-			event.locals.user = current.user;
+		const session = await instance.api.getSession({ headers: event.request.headers });
+		if (session) {
+			event.locals.session = session.session;
+			event.locals.user = session.user;
 		}
 		const { building } = await import("$app/env");
-		return svelteKitHandler({ event, resolve, auth, building });
+		return svelteKitHandler({ event, resolve, auth: instance, building });
 	};
 	const apiHandler: RequestHandler = ({ request }) => auth.handler(request);
-	return { auth: auth as unknown as Auth<P>, handle, apiHandler, providers: { github: hasKeys(social.github), google: hasKeys(social.google) } };
+	return { handle, apiHandler, providers: current.providers };
 }

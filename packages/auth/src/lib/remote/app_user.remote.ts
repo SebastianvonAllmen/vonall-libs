@@ -3,7 +3,7 @@ import { getRequestEvent } from "$app/server";
 import { z } from "zod";
 import { m } from "#lib/messages.js";
 import { adminQuery, adminSchemaCommand, protectedCommand, protectedForm, protectedQuery, protectedSchemaCommand } from "#lib/server/helpers.js";
-import { registry } from "#lib/server/registry.js";
+import { authInstance } from "#lib/server/registry.js";
 import { UserRepo } from "#lib/server/repositories/UserRepo.js";
 import { KontoService } from "#lib/server/service/konto.service.js";
 import { emailSchema, nameSchema, passwordSchema } from "#lib/types.js";
@@ -15,7 +15,7 @@ export const getAllUsers = adminQuery(async () => {
 });
 
 export const updateUserProfile = protectedForm(z.object({ name: nameSchema, email: emailSchema }), async (data, _issue, user) => {
-	const { auth } = registry();
+	const auth = authInstance();
 	const event = getRequestEvent();
 	if (data.email !== user.email) {
 		await auth.api.changeEmail({ body: { newEmail: data.email }, headers: event.request.headers });
@@ -31,7 +31,7 @@ export const changePassword = protectedForm(
 	z.object({ currentPassword: passwordSchema, ...passwordPair }).refine((d) => d.newPassword === d.confirmPassword, passwordsMatch),
 	async (data) => {
 		const event = getRequestEvent();
-		await registry().auth.api.changePassword({
+		await authInstance().api.changePassword({
 			body: { currentPassword: data.currentPassword, newPassword: data.newPassword, revokeOtherSessions: true },
 			headers: event.request.headers,
 		});
@@ -41,14 +41,14 @@ export const changePassword = protectedForm(
 
 export const setPassword = protectedForm(z.object(passwordPair).refine((d) => d.newPassword === d.confirmPassword, passwordsMatch), async (data) => {
 	const event = getRequestEvent();
-	await registry().auth.api.setPassword({ body: { newPassword: data.newPassword }, headers: event.request.headers });
+	await authInstance().api.setPassword({ body: { newPassword: data.newPassword }, headers: event.request.headers });
 	return { success: true };
 });
 
 export const getSessions = protectedQuery(async () => {
 	const event = getRequestEvent();
 	try {
-		return await registry().auth.api.listSessions({ headers: event.request.headers });
+		return await authInstance().api.listSessions({ headers: event.request.headers });
 	} catch (e) {
 		// Only a login from the last day may list the sessions; the sessions are in the settings
 		if (isSessionNotFresh(e)) redirect(303, reauthPath("/home/settings?tab=sessions"));
@@ -59,7 +59,7 @@ export const getSessions = protectedQuery(async () => {
 export const revokeSessionById = protectedSchemaCommand(z.object({ sessionId: z.string() }), async (data) => {
 	const event = getRequestEvent();
 	const currentSessionToken = event.locals.session?.token;
-	await registry().auth.api.revokeSession({ body: { token: data.sessionId }, headers: event.request.headers });
+	await authInstance().api.revokeSession({ body: { token: data.sessionId }, headers: event.request.headers });
 	const isCurrentSession = data.sessionId === currentSessionToken;
 	if (!isCurrentSession) await getSessions().refresh();
 	return { success: true, isCurrentSession };
@@ -67,7 +67,7 @@ export const revokeSessionById = protectedSchemaCommand(z.object({ sessionId: z.
 
 export const revokeOthers = protectedCommand(async () => {
 	const event = getRequestEvent();
-	await registry().auth.api.revokeOtherSessions({ headers: event.request.headers });
+	await authInstance().api.revokeOtherSessions({ headers: event.request.headers });
 	await getSessions().refresh();
 	return { success: true };
 });

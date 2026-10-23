@@ -32,7 +32,8 @@ export type Registry = {
 	mailer: Mailer;
 	admin: boolean;
 	log: AuthLog;
-	auth: Auth;
+	/** The Product's instance, from `registerAuth()`; null between `authOptions()` and that call. */
+	auth: Auth | null;
 	/** The social logins that have keys. */
 	providers: { github: boolean; google: boolean };
 };
@@ -44,8 +45,15 @@ export function setRegistry(registry: Registry) {
 }
 
 export function registry(): Registry {
-	if (!current) throw new Error("@vonall/auth: createAuth() has not run; import the app's auth wiring (src/lib/auth.ts) first");
+	if (!current) throw new Error("@vonall/auth: authOptions() has not run; import the app's auth wiring (src/lib/auth.ts) first");
 	return current;
+}
+
+/** The Product's better-auth instance. */
+export function authInstance(): Auth {
+	const auth = registry().auth;
+	if (!auth) throw new Error("@vonall/auth: registerAuth(auth) has not run; the app's auth wiring (src/lib/auth.ts) calls it after betterAuth()");
+	return auth;
 }
 
 export const consoleLog: AuthLog = {
