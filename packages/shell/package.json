@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/shell",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "The app shell behind login of a Web App Factory Product: sidebar, mobile header and tabs, breadcrumbs, the account menu",
 	"license": "MIT",
 	"repository": {
