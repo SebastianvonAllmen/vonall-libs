@@ -1,7 +1,7 @@
 /**
  * Everything CI checks, run locally first (CI minutes are limited): `pnpm ci:local`
  *
- * check, lint, unit, db and build, in that order, each with its log in a temporary folder; stops at the first failure
+ * build, check, lint, unit and db, in that order, each with its log in a temporary folder; stops at the first failure
  * and shows the end of its log. Exits non-zero when anything failed, so it can gate marking a pull request ready.
  */
 import { spawnSync } from "node:child_process";
@@ -9,7 +9,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const STEPS = ["check", "lint", "test:unit", "test:db", "build"];
+// Build first: a package imports its workspace siblings through their dist, so check and the tests need them built
+const STEPS = ["build", "check", "lint", "test:unit", "test:db"];
 
 /** Runs `pnpm run <script>` with its output in a log file; true when it passed. */
 function runStep(script, logDir) {
