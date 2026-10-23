@@ -29,6 +29,10 @@
 			"types": "./dist/index.d.ts",
 			"svelte": "./dist/index.js",
 			"default": "./dist/index.js"
+		},
+		"./messages": {
+			"types": "./dist/messages.d.ts",
+			"default": "./dist/messages.js"
 		}
 	},
 	"peerDependencies": {
