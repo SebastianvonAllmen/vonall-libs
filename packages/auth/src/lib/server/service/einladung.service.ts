@@ -5,9 +5,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { err, ok, type Result } from "neverthrow";
 import { m } from "#lib/messages.js";
-import { registry } from "#lib/server/registry.js";
-import { EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
-import { UserRepo } from "#lib/server/repositories/UserRepo.js";
+import type { AuthContext } from "#lib/server/context.js";
+import { einladungRepo } from "#lib/server/repositories/EinladungRepo.js";
+import { userRepo } from "#lib/server/repositories/UserRepo.js";
 import type { EinladungInfo, SignupMode, SignupState } from "#lib/types.js";
 import { EINLADUNG_GUELTIG_TAGE, signupState } from "#lib/util/signup.js";
 
@@ -25,51 +25,60 @@ const fehler = {
 	angenommen: (): EinladungError => ({ kind: "angenommen", message: m().einladungAngenommen }),
 };
 
-export const EinladungService = {
-	/** Creates an Einladung and returns its token, shown only this once. */
-	async erstellen(userId: string, input: { email?: string | null } = {}, now = new Date()): Promise<{ id: string; token: string; expiresAt: Date }> {
-		const token = randomBytes(24).toString("base64url");
-		const id = crypto.randomUUID();
-		const expiresAt = new Date(now.getTime() + EINLADUNG_GUELTIG_TAGE * 24 * 60 * 60 * 1000);
-		await EinladungRepo.insert({ id, tokenHash: hash(token), createdBy: userId, email: input.email ?? null, expiresAt });
-		return { id, token, expiresAt };
-	},
+/** The Einladungen of the app the context belongs to. */
+export function einladungService(ctx: AuthContext) {
+	const repo = einladungRepo(ctx);
+	const users = userRepo(ctx);
 
-	/** What the link offers, if it can still be used. */
-	async pruefen(token: string, now = new Date()): Promise<Result<EinladungInfo, EinladungError>> {
-		const row = await EinladungRepo.getByTokenHash(hash(token));
-		if (!row) return err(fehler.unbekannt());
-		if (row.acceptedAt) return err(fehler.angenommen());
-		if (row.expiresAt <= now) return err(fehler.abgelaufen());
-		return ok({ id: row.id, inviterName: row.inviterName, expiresAt: row.expiresAt });
-	},
+	const service = {
+		/** Creates an Einladung and returns its token, shown only this once. */
+		async erstellen(userId: string, input: { email?: string | null } = {}, now = new Date()): Promise<{ id: string; token: string; expiresAt: Date }> {
+			const token = randomBytes(24).toString("base64url");
+			const id = crypto.randomUUID();
+			const expiresAt = new Date(now.getTime() + EINLADUNG_GUELTIG_TAGE * 24 * 60 * 60 * 1000);
+			await repo.insert({ id, tokenHash: hash(token), createdBy: userId, email: input.email ?? null, expiresAt });
+			return { id, token, expiresAt };
+		},
 
-	/**
-	 * Whether someone may create an account now, and if not, why (the signup mode decides, `signupState`); whether it
-	 * would be the very first account; and the Einladung the token stands for, if it is usable. One count, one lookup.
-	 */
-	async signup(
-		token: string | undefined,
-		options: { now?: Date; mode?: SignupMode; mail?: boolean } = {},
-	): Promise<{ state: SignupState; firstAccount: boolean; einladung: EinladungInfo | null }> {
-		const { now = new Date(), mode = registry().signupMode, mail = registry().mailer.enabled } = options;
-		const accounts = await UserRepo.countUsers();
-		const geprueft = token ? await EinladungService.pruefen(token, now) : null;
-		const einladung = geprueft?.isOk() ? geprueft.value : null;
-		const einladungUsable = accounts > 0 && mode !== "open" && einladung !== null;
-		return { state: signupState({ mode, accounts, einladungUsable, mail }), firstAccount: accounts === 0, einladung };
-	},
+		/** What the link offers, if it can still be used. */
+		async pruefen(token: string, now = new Date()): Promise<Result<EinladungInfo, EinladungError>> {
+			const row = await repo.getByTokenHash(hash(token));
+			if (!row) return err(fehler.unbekannt());
+			if (row.acceptedAt) return err(fehler.angenommen());
+			if (row.expiresAt <= now) return err(fehler.abgelaufen());
+			return ok({ id: row.id, inviterName: row.inviterName, expiresAt: row.expiresAt });
+		},
 
-	/** Uses the Einladung for the new user: marks it as taken. */
-	async annehmen(userId: string, token: string, now = new Date()): Promise<Result<void, EinladungError>> {
-		const info = await EinladungService.pruefen(token, now);
-		if (info.isErr()) return err(info.error);
-		if (!(await EinladungRepo.accept(info.value.id, userId, now))) return err(fehler.angenommen());
-		return ok(undefined);
-	},
+		/**
+		 * Whether someone may create an account now, and if not, why (the signup mode decides, `signupState`); whether it
+		 * would be the very first account; and the Einladung the token stands for, if it is usable. One count, one lookup.
+		 */
+		async signup(
+			token: string | undefined,
+			options: { now?: Date; mode?: SignupMode; mail?: boolean } = {},
+		): Promise<{ state: SignupState; firstAccount: boolean; einladung: EinladungInfo | null }> {
+			const { now = new Date(), mode = ctx.signupMode, mail = ctx.mailer.enabled } = options;
+			const accounts = await users.countUsers();
+			const geprueft = token ? await service.pruefen(token, now) : null;
+			const einladung = geprueft?.isOk() ? geprueft.value : null;
+			const einladungUsable = accounts > 0 && mode !== "open" && einladung !== null;
+			return { state: signupState({ mode, accounts, einladungUsable, mail }), firstAccount: accounts === 0, einladung };
+		},
 
-	/** Withdraws an open Einladung of the user, or any open one when `userId` is null (the admin). */
-	async zurueckziehen(userId: string | null, einladungId: string): Promise<Result<void, EinladungError>> {
-		return (await EinladungRepo.deleteOpen(einladungId, userId)) ? ok(undefined) : err(fehler.unbekannt());
-	},
-};
+		/** Uses the Einladung for the new user: marks it as taken. */
+		async annehmen(userId: string, token: string, now = new Date()): Promise<Result<void, EinladungError>> {
+			const info = await service.pruefen(token, now);
+			if (info.isErr()) return err(info.error);
+			if (!(await repo.accept(info.value.id, userId, now))) return err(fehler.angenommen());
+			return ok(undefined);
+		},
+
+		/** Withdraws an open Einladung of the user, or any open one when `userId` is null (the admin). */
+		async zurueckziehen(userId: string | null, einladungId: string): Promise<Result<void, EinladungError>> {
+			return (await repo.deleteOpen(einladungId, userId)) ? ok(undefined) : err(fehler.unbekannt());
+		},
+	};
+	return service;
+}
+
+export type EinladungService = ReturnType<typeof einladungService>;

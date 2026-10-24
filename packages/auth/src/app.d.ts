@@ -1,10 +1,12 @@
 // SvelteKit's ambient types for the package's own check: the session a Product's hooks put into `locals` (its own
 // app.d.ts declares the same from its `auth` instance).
+import type { AuthContext } from "#lib/server/context.js";
 import type { AuthSession, AuthUser } from "#lib/server/create.js";
 
 declare global {
 	namespace App {
 		interface Locals {
+			auth: AuthContext;
 			user: AuthUser | null;
 			session: AuthSession | null;
 		}

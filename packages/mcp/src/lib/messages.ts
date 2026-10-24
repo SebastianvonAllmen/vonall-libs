@@ -20,6 +20,8 @@ export const en = {
 	deny: "Deny",
 	didntWork: "That didn't work.",
 	// The Agents tab
+	tabAgents: "AI assistants",
+	tabAgentsHint: "Assistants connected through MCP",
 	agentsTitle: "AI assistants",
 	agentsIntro: "Assistants you connected through MCP work with your data under the same rules as you in the app.",
 	unnamedAssistant: "Unnamed assistant",
@@ -59,6 +61,8 @@ export const de: McpMessages = {
 	allow: "Erlauben",
 	deny: "Ablehnen",
 	didntWork: "Das hat nicht geklappt.",
+	tabAgents: "KI-Assistenten",
+	tabAgentsHint: "Über MCP verbundene Assistenten",
 	agentsTitle: "KI-Assistenten",
 	agentsIntro: "Assistenten, die du über MCP verbunden hast, arbeiten mit deinen Daten nach denselben Regeln wie du in der App.",
 	unnamedAssistant: "Assistent ohne Namen",

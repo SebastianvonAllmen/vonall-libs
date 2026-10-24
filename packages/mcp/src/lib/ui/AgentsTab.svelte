@@ -4,15 +4,16 @@
 	import { toast } from "svelte-sonner";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import { messageOf } from "@vonall/auth";
+	import { authUi } from "@vonall/auth/ui";
 	import { m } from "#lib/messages.js";
 	import { getAgents, revokeAgent } from "#lib/remote/agent.remote.js";
 
 	/**
 	 * The AI assistants (MCP clients) the user allowed, with taking their access away, and how to connect one. Any MCP
 	 * client with OAuth works; web apps (claude.ai, ChatGPT, Le Chat) need the public HTTPS address, CLI and editor
-	 * clients work locally too. The Product puts it into its settings' tab panel.
+	 * clients work locally too. The Product puts it into its settings' tab panel (`agentsTab()` is the tab).
 	 */
-	let { appName, locale }: { appName: string; locale: string } = $props();
+	const { appName, locale } = authUi();
 
 	const agents = $derived(await getAgents());
 	const datum = $derived(new Intl.DateTimeFormat(locale, { dateStyle: "medium" }));
