@@ -1,5 +1,11 @@
 # @vonall/shell
 
+## 0.3.0
+
+### Minor Changes
+
+- [#24](https://github.com/SebastianvonAllmen/vonall-libs/pull/24) [`a9189a5`](https://github.com/SebastianvonAllmen/vonall-libs/commit/a9189a5f83497d3d6da141cc26ff397e8fe89f1e) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - A Product's own chrome around the shell, every option additive: `NavItem.mobile?: boolean` (once one item has `mobile: true`, only those are mobile tabs; `mobile: false` keeps an item out) and `AppShell` prop `moreItem?: NavItem` (the last tab, active when the current page has no tab of its own; `mobileTabs(items, user, moreItem)` and `activeTab(items, tabs, path, moreItem)` are exported). `AppShell` snippets `brand` (the sidebar header), `mobileBrand` (left side of the mobile header), `headerActions` (right of the desktop header, and in the mobile header before the theme toggle and the avatar), `sidebarFooter` (above the account menu); props `themeToggle?: boolean` (false hides the light/dark toggle), `displayName?: (user) => string` (the sidebar header, the account menu and the avatar initials), `crumbFallback?: (segment) => string | undefined` (consulted before `humanize` for a segment without a label; `crumbs` takes it as its fourth argument). The sidebar highlights the current page's item; the sidebar, both headers and the tab bar carry `print:hidden`.
+
 ## 0.2.0
 
 ### Minor Changes

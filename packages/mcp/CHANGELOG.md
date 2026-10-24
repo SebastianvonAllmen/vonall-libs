@@ -1,5 +1,16 @@
 # @vonall/mcp
 
+## 0.6.0
+
+### Minor Changes
+
+- [#25](https://github.com/SebastianvonAllmen/vonall-libs/pull/25) [`c6d3336`](https://github.com/SebastianvonAllmen/vonall-libs/commit/c6d33363a0499985de1ecfd1c4c88a8f013acdf5) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - An access gate, prompts per user and consent page slots. `createMcp({ admit?: (ctx: ToolContext) => Promise<Admission> })` with `Admission = { ok: true } | { ok: false; reason: string }`: asked on every call after the token and consent checks, `{ ok: false }` answers HTTP 403 with the JSON-RPC error `{ code: -32001, message: reason }`; `consentLoad` adds `admission` to the page data and `mcpTester(mcp)` applies it (`send`/`call` return the error, new `admit(userId)`); the registration (`Mcp`) carries `admit`. `prompts?: Prompt[] | ((ctx: ToolContext) => Promise<Prompt[]>)` (type `Prompts`, helper `promptsFor`): a function is asked on every `prompts/list` and `prompts/get`, and the capability is advertised whenever a function is given or the list is not empty. `ConsentPage` snippets `scopes` (replaces the tool-scope list), `notice` (after the consent note) and `refusalNote`; with `data.admission.ok === false` the page shows the reason, `refusalNote` and one "Back to the assistant"/"Zurück zum Assistenten" button that answers deny (message key `backToAssistant`). `agentRepo(ctx).hasAny(userId)`: whether the user allowed any assistant.
+
+### Patch Changes
+
+- Updated dependencies [[`50d73c4`](https://github.com/SebastianvonAllmen/vonall-libs/commit/50d73c4ef914dde179e161bbf02eadc2aefbe12d)]:
+  - @vonall/auth@0.9.0
+
 ## 0.5.1
 
 ### Patch Changes
