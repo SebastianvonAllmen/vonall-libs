@@ -53,7 +53,7 @@
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="grid gap-4 text-sm">
-		{#if !data.admission.ok}
+		{#if data.admission?.ok === false}
 			<p>{data.admission.reason}</p>
 			{#if refusalNote}<div class="text-xs text-muted-foreground">{@render refusalNote()}</div>{/if}
 			<Button disabled={busy} variant="outline" onclick={() => answer(false)} class="cursor-pointer">{m().backToAssistant}</Button>
