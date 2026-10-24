@@ -6,6 +6,7 @@
 	import { messageOf } from "@vonall/auth";
 	import { authUi } from "@vonall/auth/ui";
 	import { m } from "#lib/messages.js";
+	import { MCP_PATH } from "#lib/path.js";
 	import { getAgents, revokeAgent } from "#lib/remote/agent.remote.js";
 
 	/**
@@ -17,7 +18,7 @@
 
 	const agents = $derived(await getAgents());
 	const datum = $derived(new Intl.DateTimeFormat(locale, { dateStyle: "medium" }));
-	const url = $derived(`${page.url.origin}/api/mcp`);
+	const url = $derived(`${page.url.origin}${MCP_PATH}`);
 	const local = $derived(["localhost", "127.0.0.1"].includes(page.url.hostname));
 	const slug = $derived(appName.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
 

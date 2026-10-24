@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { configureMcpMessages } from "#lib/messages.js";
-import { handleMessage, prompt, tool, type Prompt, type Tool } from "./protocol";
+import { handleMessage, prompt, scopeLines, tool, type Prompt, type Tool, type ToolContext } from "./protocol";
 
 type Antwort = {
 	result?: {
@@ -22,7 +22,8 @@ const TOOLS: Tool[] = [
 		name: "echo",
 		description: "Echoes the text.",
 		input: z.object({ text: z.string().min(1) }),
-		run: async (userId, input) => ({ ok: true, data: { userId, text: input.text } }),
+		scope: { en: "echo your text", de: "deinen Text zurückgeben" },
+		run: async (ctx, input) => ({ ok: true, data: { userId: ctx.userId, text: input.text } }),
 	}),
 	tool({ name: "fail", description: "Always fails.", input: z.object({}), run: async () => ({ ok: false, message: "Nope" }) }),
 ];
@@ -36,7 +37,8 @@ const PROMPTS: Prompt[] = [
 	}),
 ];
 
-const send = (message: object, prompts: Prompt[] = []) => handleMessage(message, "user-1", TOOLS, SERVER, prompts) as Promise<Antwort>;
+const CTX: ToolContext = { userId: "user-1", clientId: "claude", locale: "en-GB", role: null };
+const send = (message: object, prompts: Prompt[] = []) => handleMessage(message, CTX, TOOLS, SERVER, prompts) as Promise<Antwort>;
 
 describe("handleMessage", () => {
 	it("initializes with the requested protocol version, else the newest, and says what it offers", async () => {
@@ -82,5 +84,12 @@ describe("handleMessage", () => {
 		expect((await send({ hello: "world" })).error?.code).toBe(-32600);
 		expect((await send({ jsonrpc: "2.0", id: 9, method: "resources/list" })).error?.code).toBe(-32601);
 		expect((await send({ jsonrpc: "2.0", id: 10, method: "ping" })).result).toEqual({});
+	});
+});
+
+describe("scopeLines", () => {
+	it("lists the tools' consent lines in the app's language, once each", () => {
+		expect(scopeLines(TOOLS, "de-CH")).toEqual(["deinen Text zurückgeben"]);
+		expect(scopeLines([...TOOLS, ...TOOLS], "en-GB")).toEqual(["echo your text"]);
 	});
 });

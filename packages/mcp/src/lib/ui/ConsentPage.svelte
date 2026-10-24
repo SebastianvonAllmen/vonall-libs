@@ -12,8 +12,8 @@
 	type ConsentClient = { oauth2: { consent(input: { accept: boolean }): Promise<{ error?: { message?: string } | null }> } };
 
 	/**
-	 * The consent screen of an MCP client authorisation (`consentLoad` gives `data`). `children` lists what the assistant
-	 * may do, in the Product's words.
+	 * The consent screen of an MCP client authorisation (`consentLoad` gives `data`): what the assistant may do is the
+	 * tools' scope lines; `children` adds the Product's own words below them.
 	 */
 	let { data, authClient, children }: { data: ConsentData; authClient: ConsentClient; children?: Snippet } = $props();
 	const { appName } = authUi();
@@ -45,6 +45,11 @@
 	</Card.Header>
 	<Card.Content class="grid gap-4 text-sm">
 		<p>{m().consentIntro(appName)}</p>
+		{#if data.toolScopes.length}
+			<ul class="grid list-disc gap-1 pl-5">
+				{#each data.toolScopes as line (line)}<li>{line}</li>{/each}
+			</ul>
+		{/if}
 		{@render children?.()}
 		<p class="text-xs text-muted-foreground">{m().consentNote}</p>
 		<div class="grid gap-2">

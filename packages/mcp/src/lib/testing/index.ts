@@ -1,5 +1,6 @@
 /** For a Product's db test of its tools (`src/lib/server/mcp/mcp.db.test.ts`): calls through the protocol as an assistant would. */
-import { handleMessage, type Prompt, type ServerInfo, type Tool } from "#lib/server/protocol.js";
+import type { Mcp } from "#lib/server/endpoint.js";
+import { handleMessage } from "#lib/server/protocol.js";
 
 export type McpAnswer = {
 	result?: {
@@ -14,9 +15,11 @@ export type McpAnswer = {
 	error?: { code: number; message: string };
 };
 
-export function mcpTester({ tools, prompts = [], serverInfo }: { tools: Tool[]; prompts?: Prompt[]; serverInfo: ServerInfo }) {
+/** Over the Product's registration (`createMcp()`), so the tools, prompts and the tool context are the app's own. */
+export function mcpTester(mcp: Mcp, clientId = "test-assistant") {
+	const { tools, prompts, serverInfo } = mcp;
 	/** One JSON-RPC message as the user; the raw answer. */
-	const send = (userId: string, message: object) => handleMessage(message, userId, tools, serverInfo, prompts) as Promise<McpAnswer | null>;
+	const send = async (userId: string, message: object) => (await handleMessage(message, await mcp.toolContext(userId, clientId), tools, serverInfo, prompts)) as McpAnswer | null;
 	/** A tool call as the user: `isError` and the parsed data (or the error text). */
 	async function call(userId: string, name: string, args: object = {}) {
 		const res = (await send(userId, { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } })) as McpAnswer;

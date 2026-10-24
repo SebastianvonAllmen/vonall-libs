@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.7.0
+
+### Minor Changes
+
+- [#18](https://github.com/SebastianvonAllmen/vonall-libs/pull/18) [`501cdd2`](https://github.com/SebastianvonAllmen/vonall-libs/commit/501cdd29349d56ccf1a87248950a3098f9e6e29d) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - `@vonall/auth`: a Product's own columns on `user` (`authSchema({ user: { phone: text("phone") } })` with `createAuth({ userFields })`); `userRepo(ctx)` selects every column. One typed `AuthPageData` between the loads and the components, read through `authPageData(...keys)` (throws naming the load when a key is missing); `signupLoad` no longer returns `mode`; `EinladungPage` takes `einladungLoad`'s data. `SettingsPage` takes a `profile` snippet below name and email; `SettingsTabDef.deletionNote` lets a tab add its sentence to the deletion tab (`DeletionTab` takes `notes`, no `agents`); the `deletionAgents` message moved to `@vonall/mcp`, whose `agentsTab()` carries it.
+
 ## 0.6.0
 
 ### Minor Changes

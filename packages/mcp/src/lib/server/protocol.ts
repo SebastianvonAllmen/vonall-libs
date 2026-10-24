@@ -3,6 +3,7 @@
  * layer (HTTP, OAuth) is `createMcp`; this module only maps JSON-RPC messages to tools and prompts.
  */
 import { z } from "zod";
+import { languageOf } from "@vonall/messages";
 import { m } from "#lib/messages.js";
 
 export const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"] as const;
@@ -10,15 +11,26 @@ export const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "202
 /** A tool's outcome: data for the assistant, or a message it should read and react to. */
 export type ToolErgebnis = { ok: true; data: unknown } | { ok: false; message: string };
 
+/**
+ * Who calls a tool: the user (the token's subject), the assistant (its OAuth client), the app's locale for anything a
+ * person reads, and the user's role (the Admin option; null without it).
+ */
+export type ToolContext = { userId: string; clientId: string | null; locale: string; role: string | null };
+
 /** A tool: a thin wrapper around an application service, so an assistant is bound by the same rules as the UI. */
 export type Tool<S extends z.ZodType = z.ZodType> = {
 	name: string;
 	description: string;
 	input: S;
-	run: (userId: string, input: z.output<S>) => Promise<ToolErgebnis>;
+	/** One line of the consent page, what the assistant may do, in both languages: `{ en: "read your entries", de: "deine Einträge lesen" }`. */
+	scope?: { en: string; de: string };
+	run: (ctx: ToolContext, input: z.output<S>) => Promise<ToolErgebnis>;
 };
 
 export const tool = <S extends z.ZodType>(t: Tool<S>): Tool => t as unknown as Tool;
+
+/** The tools' consent lines in the app's language, each once. */
+export const scopeLines = (tools: Tool[], locale: string): string[] => [...new Set(tools.flatMap((t) => (t.scope ? [t.scope[languageOf(locale)]] : [])))];
 
 /** A prompt the client offers the user (e.g. in Claude's "+" menu); it becomes the first user message. */
 export type Prompt = {
@@ -43,7 +55,7 @@ const fehler = (id: JsonRpcRequest["id"], code: number, message: string) => ({
 });
 
 /** Answers one JSON-RPC message; `null` for notifications, which get no response. */
-export async function handleMessage(message: unknown, userId: string, tools: Tool[], server: ServerInfo, prompts: Prompt[] = []): Promise<object | null> {
+export async function handleMessage(message: unknown, ctx: ToolContext, tools: Tool[], server: ServerInfo, prompts: Prompt[] = []): Promise<object | null> {
 	const parsed = z
 		.object({ jsonrpc: z.literal("2.0"), id: z.union([z.string(), z.number(), z.null()]).optional(), method: z.string(), params: z.record(z.string(), z.unknown()).optional() })
 		.safeParse(message);
@@ -87,7 +99,7 @@ export async function handleMessage(message: unknown, userId: string, tools: Too
 			if (!input.success) {
 				return { jsonrpc: "2.0", id: req.id, result: { isError: true, content: [{ type: "text", text: `${m().invalidInput}: ${z.prettifyError(input.error)}` }] } };
 			}
-			const ergebnis = await t.run(userId, input.data);
+			const ergebnis = await t.run(ctx, input.data);
 			const result = ergebnis.ok
 				? { content: [{ type: "text", text: JSON.stringify(ergebnis.data ?? { ok: true }, null, 2) }] }
 				: { isError: true, content: [{ type: "text", text: ergebnis.message }] };
