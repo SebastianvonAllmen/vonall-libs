@@ -33,6 +33,17 @@ describe("AgentRepo", () => {
 		expect(await AgentRepo.hasAccess(lena, "chatgpt")).toBe(false);
 	});
 
+	it("knows whether a user allowed any assistant", async () => {
+		const lena = await createUser("lena@example.com");
+		const tim = await createUser("tim@example.com");
+		expect(await AgentRepo.hasAny(lena)).toBe(false);
+		await connect(lena, "claude", "Claude");
+		expect(await AgentRepo.hasAny(lena)).toBe(true);
+		expect(await AgentRepo.hasAny(tim)).toBe(false);
+		await AgentRepo.revoke(lena, "claude");
+		expect(await AgentRepo.hasAny(lena)).toBe(false);
+	});
+
 	it("revokes an assistant at once: consent and tokens", async () => {
 		const lena = await createUser("lena@example.com");
 		await connect(lena, "claude", "Claude");

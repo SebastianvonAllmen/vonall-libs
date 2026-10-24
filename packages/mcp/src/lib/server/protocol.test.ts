@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { configureMcpMessages } from "#lib/messages.js";
-import { handleMessage, prompt, scopeLines, tool, type Prompt, type Tool, type ToolContext } from "./protocol";
+import { handleMessage, prompt, scopeLines, tool, type Prompt, type Prompts, type Tool, type ToolContext } from "./protocol";
 
 type Antwort = {
 	result?: {
@@ -38,7 +38,7 @@ const PROMPTS: Prompt[] = [
 ];
 
 const CTX: ToolContext = { userId: "user-1", clientId: "claude", locale: "en-GB", role: null };
-const send = (message: object, prompts: Prompt[] = []) => handleMessage(message, CTX, TOOLS, SERVER, prompts) as Promise<Antwort>;
+const send = (message: object, prompts: Prompts = []) => handleMessage(message, CTX, TOOLS, SERVER, prompts) as Promise<Antwort>;
 
 describe("handleMessage", () => {
 	it("initializes with the requested protocol version, else the newest, and says what it offers", async () => {
@@ -77,6 +77,25 @@ describe("handleMessage", () => {
 		expect(got.result!.messages![0]).toMatchObject({ role: "user", content: { text: "Start with 2026-10-12." } });
 		const missing = await send({ jsonrpc: "2.0", id: 9, method: "prompts/get", params: { name: "start" } }, PROMPTS);
 		expect(missing.error?.code).toBe(-32602);
+	});
+
+	it("asks a prompts function per request, for the caller, and advertises prompts whenever one is given", async () => {
+		const seen: string[] = [];
+		const byUser: Prompts = async (ctx) => {
+			seen.push(ctx.userId);
+			return ctx.userId === "user-1" ? PROMPTS : [];
+		};
+		const init = await send({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }, byUser);
+		expect(init.result?.capabilities).toHaveProperty("prompts");
+		const list = await send({ jsonrpc: "2.0", id: 2, method: "prompts/list" }, byUser);
+		expect(list.result!.prompts!.map((p) => p.name)).toEqual(["start"]);
+		const got = await send({ jsonrpc: "2.0", id: 3, method: "prompts/get", params: { name: "start", arguments: { date: "2026-10-24" } } }, byUser);
+		expect(got.result!.messages![0].content.text).toBe("Start with 2026-10-24.");
+		const other = (await handleMessage({ jsonrpc: "2.0", id: 4, method: "prompts/list" }, { ...CTX, userId: "user-2" }, TOOLS, SERVER, byUser)) as Antwort;
+		expect(other.result!.prompts).toEqual([]);
+		const none = (await handleMessage({ jsonrpc: "2.0", id: 5, method: "prompts/get", params: { name: "start" } }, { ...CTX, userId: "user-2" }, TOOLS, SERVER, byUser)) as Antwort;
+		expect(none.error?.code).toBe(-32602);
+		expect(seen).toEqual(["user-1", "user-1", "user-2", "user-2"]);
 	});
 
 	it("answers notifications with nothing, bad messages and unknown methods with JSON-RPC errors", async () => {

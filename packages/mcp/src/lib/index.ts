@@ -2,5 +2,5 @@
 // client plugin `@vonall/mcp/client`, the components `@vonall/mcp/ui`, the remote functions `@vonall/mcp/remote`.
 export { configureMcpMessages, m, type McpMessages } from "#lib/messages.js";
 export { MCP_PATH } from "#lib/path.js";
-export { handleMessage, PROTOCOL_VERSIONS, prompt, scopeLines, tool, type Prompt, type ServerInfo, type Tool, type ToolContext, type ToolErgebnis } from "#lib/server/protocol.js";
+export { handleMessage, PROTOCOL_VERSIONS, prompt, promptsFor, scopeLines, tool, type Admission, type Prompt, type Prompts, type ServerInfo, type Tool, type ToolContext, type ToolErgebnis } from "#lib/server/protocol.js";
 export { crossSiteWrite } from "#lib/util/crossSiteWrite.js";
