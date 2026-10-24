@@ -8,7 +8,6 @@
 	import type { AppUserClient } from "#lib/types.js";
 	import { authUi } from "#lib/ui/context.js";
 	import DeletionTab from "#lib/ui/DeletionTab.svelte";
-	import { href } from "#lib/ui/href.js";
 	import InvitationsTab from "#lib/ui/InvitationsTab.svelte";
 	import LinksTab from "#lib/ui/LinksTab.svelte";
 	import MobileSettingsMenu from "#lib/ui/MobileSettingsMenu.svelte";
@@ -48,7 +47,7 @@
 		const url = new URL(page.url.href);
 		if (tabName) url.searchParams.set("tab", tabName);
 		else url.searchParams.delete("tab");
-		goto(`${href("/home/settings")}${url.search}`);
+		goto(`${page.url.pathname}${url.search}`); // wherever the Product mounted this page
 	}
 
 	const memberSince = $derived(user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale, { year: "numeric", month: "long" }) : "");

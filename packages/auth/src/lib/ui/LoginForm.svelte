@@ -37,7 +37,8 @@
 	const providers = $derived(page.data.providers as { github?: boolean; google?: boolean } | undefined);
 	const mail = $derived(page.data.mail as boolean);
 
-	const urlError = $derived(page.url.searchParams.get("error"));
+	// The reason the URL brought along (a refused social signup, a stale login); a fresh attempt replaces it
+	let urlError = $derived(page.url.searchParams.get("error"));
 	// A new account through GitHub or Google was refused: why depends on the signup mode
 	const noNewAccount = $derived(signupMode === "open" ? m().noNewAccountOpen : m().noNewAccountInvite);
 	const URL_ERRORS = $derived<Record<string, string>>({
@@ -47,7 +48,8 @@
 		session_not_fresh: m().loginTooOld,
 	});
 
-	const displayError = $derived(urlError ? (URL_ERRORS[urlError.toLowerCase()] ?? urlError) : errorMessage);
+	// Only known reasons are shown; an unknown code is not echoed (a link could plant any text here)
+	const displayError = $derived(urlError ? (URL_ERRORS[urlError.toLowerCase()] ?? m().loginFailed) : errorMessage);
 
 	async function requestPasswordReset(e: SubmitEvent) {
 		e.preventDefault();
@@ -57,7 +59,7 @@
 		}
 		sendingResetLink = true;
 		try {
-			const res = await authClient.requestPasswordReset({ email: forgotPasswordEmail, redirectTo: `${window.location.origin}/auth/reset-password` });
+			const res = await authClient.requestPasswordReset({ email: forgotPasswordEmail, redirectTo: `${window.location.origin}${href("/auth/reset-password")}` });
 			if (res.error) {
 				toast.error(res.error.message || m().resetLinkNotSent);
 			} else {
@@ -84,7 +86,7 @@
 		if (oauthRequest) {
 			// Fallback: with a session, the authorize endpoint continues the flow in the browser
 			const query = [...page.url.searchParams].filter(([key]) => key !== "sig" && key !== "exp");
-			window.location.href = `/api/auth/oauth2/authorize?${query.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&")}`;
+			window.location.href = `${href("/api/auth/oauth2/authorize")}?${query.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&")}`;
 			return;
 		}
 		// A new login: queries cached before it (one that sent here to log in again resolved empty) load again
@@ -99,6 +101,7 @@
 				onRequest: () => {
 					loading = true;
 					errorMessage = "";
+					urlError = null;
 				},
 				onSuccess: async (ctx) => {
 					loading = false;
@@ -169,8 +172,8 @@
 					<div class="grid gap-6">
 						{#if providers?.github || providers?.google}
 							<div class="flex flex-col gap-4">
-								{#if providers.github}<SocialButton provider="github" callbackURL={redirectTo ?? "/home"} />{/if}
-								{#if providers.google}<SocialButton provider="google" callbackURL={redirectTo ?? "/home"} />{/if}
+								{#if providers.github}<SocialButton provider="github" callbackURL={redirectTo ?? href("/home")} />{/if}
+								{#if providers.google}<SocialButton provider="google" callbackURL={redirectTo ?? href("/home")} />{/if}
 							</div>
 							<div class="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
 								<span class="bg-card text-muted-foreground relative z-10 px-2">{m().orWithEmail}</span>

@@ -98,11 +98,15 @@
 		}
 	}
 
-	function handleCopyBackupCodes() {
-		navigator.clipboard.writeText(backupCodes.join("\n"));
-		isCopied = true;
-		toast.success(m().backupCodesCopied);
-		setTimeout(() => (isCopied = false), 2000);
+	async function handleCopyBackupCodes() {
+		try {
+			await navigator.clipboard.writeText(backupCodes.join("\n"));
+			isCopied = true;
+			toast.success(m().backupCodesCopied);
+			setTimeout(() => (isCopied = false), 2000);
+		} catch {
+			toast.error(m().copyLinkFailed);
+		}
 	}
 </script>
 

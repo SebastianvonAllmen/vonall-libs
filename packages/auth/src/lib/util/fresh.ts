@@ -13,7 +13,7 @@ export function isSessionNotFresh(e: unknown): boolean {
 
 /** The login page that signs out a stale session and then returns to `redirectTo`. */
 export function reauthPath(redirectTo: string): string {
-	return `/auth/login?error=${SESSION_NOT_FRESH.toLowerCase()}&redirectTo=${encodeURIComponent(redirectTo)}`;
+	return `/auth/login?error=${SESSION_NOT_FRESH.toLowerCase()}&redirectTo=${encodeURIComponent(redirectTo)}`; // the Product's loads prefix the base path
 }
 
 /** better-auth's own check: a `freshAge` of 0 turns it off. */

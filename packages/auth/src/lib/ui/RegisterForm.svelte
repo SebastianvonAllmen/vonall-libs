@@ -39,7 +39,7 @@
 		}
 		const name = email.split("@")[0]; // the server turns it into a readable name
 		await authClient.signUp.email(
-			{ email, password, name, callbackURL: "/home" },
+			{ email, password, name, callbackURL: href("/home") },
 			{
 				onRequest: () => {
 					loading = true;

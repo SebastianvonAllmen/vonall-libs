@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/shell",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "The app shell behind login of a Web App Factory Product: sidebar, mobile header and tabs, breadcrumbs, the account menu",
 	"license": "MIT",
 	"repository": {
@@ -38,7 +38,10 @@
 	},
 	"peerDependencies": {
 		"@sveltejs/kit": "^3.1.0",
-		"svelte": "^5.57.2"
+		"svelte": "^5.57.2",
+		"bits-ui": "^2.19.5",
+		"@lucide/svelte": "^1.22.0",
+		"mode-watcher": "^1.1.0"
 	},
 	"devDependencies": {
 		"@sveltejs/kit": "^3.1.0",
@@ -49,7 +52,10 @@
 		"svelte-check": "^4.7.7",
 		"typescript": "^6.0.3",
 		"vite": "8.3.4",
-		"vitest": "^5.0.5"
+		"vitest": "^5.0.5",
+		"bits-ui": "^2.19.5",
+		"@lucide/svelte": "^1.22.0",
+		"mode-watcher": "^1.1.0"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",
@@ -62,10 +68,7 @@
 		"access": "public"
 	},
 	"dependencies": {
-		"@lucide/svelte": "1.22.0",
-		"bits-ui": "^2.20.2",
 		"clsx": "^2.1.1",
-		"mode-watcher": "^1.1.0",
 		"tailwind-merge": "^3.7.0",
 		"tailwind-variants": "^3.3.1"
 	}

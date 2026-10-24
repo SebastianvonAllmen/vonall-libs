@@ -8,6 +8,7 @@
 	import { m } from "#lib/messages.js";
 	import { deleteOwnAccount } from "#lib/remote/app_user.remote.js";
 	import { authUi } from "#lib/ui/context.js";
+	import { href } from "#lib/ui/href.js";
 	import { messageOf } from "#lib/util/messageOf.js";
 
 	/** Deleting the own account; `agents` adds the sentence about connected AI assistants (the MCP endpoint). */
@@ -27,7 +28,7 @@
 			if (res.success) {
 				toast.success(m().accountDeleted);
 				await authClient.signOut().catch(() => undefined);
-				window.location.href = "/";
+				window.location.href = href("/");
 			} else {
 				toast.error(m().accountNotDeleted);
 			}

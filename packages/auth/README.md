@@ -54,7 +54,7 @@ better-auth plugins and rate limit rule come from `@vonall/mcp` through `plugins
 <!-- src/routes/auth/signup/+page.svelte -->  <RegisterForm />
 <!-- src/routes/auth/reset-password -->       <ResetPasswordForm />
 <!-- src/routes/einladung/[token] -->         <EinladungPage {data} tagline={APP_TAGLINE} />
-<!-- src/routes/home/settings -->             <SettingsPage extraTabs={[agentsTab()]}>{#snippet extra(id)}…{/snippet}</SettingsPage>
+<!-- src/routes/home/settings -->             <SettingsPage extraTabs={[{ id: "agents", label, hint, icon: Bot }]}>{#snippet extra(id)}…{/snippet}</SettingsPage>
 <!-- src/routes/home/manage_user -->          <AdminView currentUserId={data.currentUserId} />
 ```
 
