@@ -8,7 +8,8 @@ import type { FullSchema } from "#lib/schema/index.js";
  * - `invite`: anyone with an account can create an Einladung, and signup needs one
  * - `open`: anyone can sign up and confirms their email address first (needs mail)
  * - `admin`: only admins create Einladungen
- * The first account needs neither an Einladung nor a confirmation in any mode.
+ * The first account needs neither an Einladung nor a confirmation in any mode, unless `createAuth({ adminEmails })`
+ * names the admins: then those addresses sign up without an Einladung and nobody is first.
  */
 export const SIGNUP_MODES = ["invite", "open", "admin"] as const;
 export type SignupMode = (typeof SIGNUP_MODES)[number];

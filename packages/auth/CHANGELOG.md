@@ -1,5 +1,13 @@
 # @vonall/auth
 
+## 0.8.0
+
+### Minor Changes
+
+- [#21](https://github.com/SebastianvonAllmen/vonall-libs/pull/21) [`9bbe0a3`](https://github.com/SebastianvonAllmen/vonall-libs/commit/9bbe0a38ef597698673973353dcc763d8b2c3a67) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - `createAuth({ adminEmails })`: the addresses of a Product's `ADMIN_EMAILS` are the admins. They sign up without an Einladung and get the role once the address is confirmed (Google/GitHub at once, a password signup through the mailed link, an existing account at its next login); with a list, the first account is no longer the admin. `signupLoad` adds `adminList` to the page data and the signup form stays visible for them. `adminList()` and `isListed()` are exported.
+  
+  Fix: the Profile tab's name and email fields could not be edited (the effect that fills them re-ran on every keystroke).
+
 ## 0.7.0
 
 ### Minor Changes

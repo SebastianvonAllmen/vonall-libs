@@ -29,6 +29,8 @@ export type AuthPageData = {
 	mail: boolean;
 	state: SignupState;
 	einladung: { inviterName: string } | null;
+	/** The Product has an admin list: the signup form shows even when `state` refuses, for a listed address. */
+	adminList: boolean;
 	user: SessionUser;
 	/** The session without its token. */
 	session: { id: string; expiresAt: Date };
@@ -64,12 +66,15 @@ export async function loginLoad({ locals, url, request }: Event) {
 	return {};
 }
 
-/** `/auth/signup`: the signup mode decides; the very first account (the admin) needs nothing. */
+/** `/auth/signup`: the signup mode decides; the very first account (the admin, without an admin list) needs nothing. */
 export async function signupLoad({ locals, cookies }: Event) {
 	if (locals.session) throw redirect(302, "/home");
 	const ctx = contextOf(locals);
 	const { state, einladung } = await einladungService(ctx).signup(cookies.get(EINLADUNG_COOKIE));
-	return { state, einladung: einladung ? { inviterName: einladung.inviterName } : null } satisfies Pick<AuthPageData, "state" | "einladung">;
+	return { state, einladung: einladung ? { inviterName: einladung.inviterName } : null, adminList: ctx.adminEmails.length > 0 } satisfies Pick<
+		AuthPageData,
+		"state" | "einladung" | "adminList"
+	>;
 }
 
 /**

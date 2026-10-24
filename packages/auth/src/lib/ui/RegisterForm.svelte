@@ -26,7 +26,9 @@
 	const erlaubt = $derived(signupState === "allowed");
 	/** After signing up without a session (signup mode open): confirm by mail first, or (first account) log in. */
 	let done = $state<"confirm" | "login" | null>(null);
-	const einladung = $derived(authPageData("einladung").einladung);
+	const { einladung, adminList } = $derived(authPageData("einladung", "adminList"));
+	/** The form shows when signing up can work, or when a listed admin's address might (the server decides at signup). */
+	const formShown = $derived(erlaubt || adminList);
 	const providerNames = $derived([providers?.github && "GitHub", providers?.google && "Google"].filter(Boolean).join(` ${m().or} `));
 
 	async function signUp(e: SubmitEvent) {
@@ -81,7 +83,7 @@
 					<p>{m().accountReady}</p>
 					<p><a href={href("/auth/login")} class="underline underline-offset-4">{m().logIn}</a></p>
 				</div>
-			{:else if !erlaubt}
+			{:else if !formShown}
 				<div class="grid gap-4 text-center text-sm">
 					{#if signupState === "no_mail"}
 						<p>{m().noNewAccountOpen}</p>
@@ -96,6 +98,9 @@
 			{:else}
 				<form onsubmit={signUp}>
 					<div class="grid gap-6">
+						{#if !erlaubt}
+							<p class="text-center text-sm text-muted-foreground">{m().inviteOnly(appName)} {m().adminListHint}</p>
+						{/if}
 						{#if providers?.github || providers?.google}
 							<div class="flex flex-col gap-4">
 								{#if providers.github}<SocialButton provider="github" />{/if}

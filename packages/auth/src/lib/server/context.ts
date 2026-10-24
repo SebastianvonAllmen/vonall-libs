@@ -34,6 +34,11 @@ export type AuthContext<S extends AuthSchema = AuthSchema> = {
 	log: AuthLog;
 	/** The Admin option: `schema` has the role columns (and the instance the admin plugin, `register()` checks). */
 	admin: boolean;
+	/**
+	 * The addresses that are admins (ADMIN_EMAILS, lower case): they sign up without an Einladung and get the role once
+	 * their address is confirmed, at signup or at a later login. Empty: the first account is the admin.
+	 */
+	adminEmails: string[];
 	/** Whether `schema` has the OAuth provider's tables (`@vonall/mcp`). */
 	mcp: boolean;
 	/** The social logins that have keys. */

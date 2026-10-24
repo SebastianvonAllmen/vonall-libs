@@ -6,7 +6,7 @@
 	import * as Tabs from "#lib/components/ui/tabs/index.js";
 	import { m } from "#lib/messages.js";
 	import { updateUserProfile } from "#lib/remote/app_user.remote.js";
-	import type { Snippet } from "svelte";
+	import { untrack, type Snippet } from "svelte";
 	import type { SessionUser } from "#lib/types.js";
 	import { messageOf } from "#lib/util/messageOf.js";
 
@@ -14,11 +14,15 @@
 	let { user, children }: { user: SessionUser | null | undefined; children?: Snippet } = $props();
 	let isSubmitting = $state(false);
 
+	// The session's values into the form, untracked: `set` reads the form's state, so a tracked call would re-run on
+	// every keystroke and overwrite what was typed
 	$effect(() => {
-		if (user) {
-			updateUserProfile.fields.name.set(user.name);
-			updateUserProfile.fields.email.set(user.email);
-		}
+		if (!user) return;
+		const { name, email } = user;
+		untrack(() => {
+			updateUserProfile.fields.name.set(name);
+			updateUserProfile.fields.email.set(email);
+		});
 	});
 </script>
 
