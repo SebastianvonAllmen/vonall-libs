@@ -1,0 +1,39 @@
+{
+	"name": "vonall-libs",
+	"version": "0.0.0",
+	"private": true,
+	"author": "Sebastian von Allmen <sebastian.v.allmen@gmail.com>",
+	"license": "MIT",
+	"type": "module",
+	"packageManager": "pnpm@10.33.0",
+	"scripts": {
+		"preinstall": "only-allow pnpm",
+		"check": "pnpm -r --workspace-concurrency=1 check",
+		"lint": "eslint .",
+		"test:unit": "pnpm -r --workspace-concurrency=1 test:unit",
+		"test:db": "pnpm -r --workspace-concurrency=1 test:db",
+		"build": "pnpm -r --workspace-concurrency=1 build",
+		"ci:local": "node scripts/ci-local.mjs",
+		"new": "node scripts/new-package.mjs",
+		"changeset": "changeset",
+		"release": "pnpm build && changeset publish"
+	},
+	"devDependencies": {
+		"@changesets/changelog-github": "^1.0.1",
+		"@changesets/cli": "^3.0.3",
+		"@eslint/js": "^10.0.1",
+		"@types/pg": "^8.23.1",
+		"dotenv": "17.4.2",
+		"drizzle-orm": "^0.45.4",
+		"eslint": "^10.13.0",
+		"eslint-plugin-svelte": "^3.23.1",
+		"globals": "^17.13.0",
+		"only-allow": "^1.2.2",
+		"pg": "^8.23.1",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.71.2"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	}
+}
