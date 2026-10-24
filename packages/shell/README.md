@@ -36,7 +36,7 @@ A Product's own chrome goes through `AppShell`'s optional snippets and props; wi
 | `headerActions` (snippet)          | the right of the desktop header; in the mobile header before the theme toggle/avatar |
 | `sidebarFooter` (snippet)          | the sidebar footer, above the account menu                                            |
 | `themeToggle` (default `true`)     | `false` hides the light/dark toggle in the mobile header and the account menu        |
-| `displayName` (`(user) => string`) | how the account menu and the avatar initials name the user (default: name, else email) |
+| `displayName` (`(user) => string`) | how the sidebar header, account menu and avatar initials name the user (default: name, else email) |
 | `crumbFallback` (`(seg) => string \| undefined`) | names a breadcrumb segment without a label before it is humanized (an id as "…") |
 
 The sidebar, both headers and the tab bar carry `print:hidden`, so a printed page is only the page. Strings in English and German:

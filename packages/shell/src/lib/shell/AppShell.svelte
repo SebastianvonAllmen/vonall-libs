@@ -51,7 +51,7 @@
 		moreItem?: NavItem;
 		/** `false` hides the light/dark toggle in the mobile header and the account menu (a Product with one theme). */
 		themeToggle?: boolean;
-		/** How the account menu and the avatar name the user (default: the name, else the email). */
+		/** How the sidebar header, the account menu and the avatar name the user (default: the name, else the email). */
 		displayName?: (user: ShellUser) => string;
 		/** The sidebar's header, instead of the app name, the user and their role. */
 		brand?: Snippet;

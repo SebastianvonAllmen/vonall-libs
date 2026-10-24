@@ -60,7 +60,7 @@
 		{#if brand}
 			{@render brand()}
 		{:else}
-			<AppBrand {user} {appName} />
+			<AppBrand {user} {appName} {displayName} />
 		{/if}
 	</Sidebar.Header>
 

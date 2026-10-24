@@ -2,9 +2,11 @@
 	import { LayoutDashboard } from "@lucide/svelte";
 	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
 	import { m } from "#lib/messages.js";
+	import { displayName as defaultDisplayName } from "#lib/shell/names.js";
 	import type { ShellUser } from "./AppShell.svelte";
 
-	let { user, appName }: { user: ShellUser; appName: string } = $props();
+	/** The sidebar header: the app name, the user as the shell names them, and their role. */
+	let { user, appName, displayName = defaultDisplayName }: { user: ShellUser; appName: string; displayName?: (user: ShellUser) => string } = $props();
 </script>
 
 <Sidebar.Menu>
@@ -15,7 +17,7 @@
 			</div>
 			<div class="grid flex-1 text-left text-sm leading-tight">
 				<span class="truncate font-semibold">{appName}</span>
-				<span class="truncate text-xs text-muted-foreground">{user.name}</span>
+				<span class="truncate text-xs text-muted-foreground">{displayName(user)}</span>
 				{#if user.role === "admin"}<span class="truncate text-xs text-muted-foreground">{m().administrator}</span>{/if}
 			</div>
 		</div>
