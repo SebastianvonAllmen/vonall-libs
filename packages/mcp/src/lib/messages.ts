@@ -18,6 +18,7 @@ export const en = {
 	consentNote: "What the assistant reads goes to its provider. You can take its access away at any time under Settings → AI assistants.",
 	allow: "Allow",
 	deny: "Deny",
+	backToAssistant: "Back to the assistant",
 	didntWork: "That didn't work.",
 	// The Agents tab
 	tabAgents: "AI assistants",
@@ -61,6 +62,7 @@ export const de: McpMessages = {
 	consentNote: "Was der Assistent liest, geht an seinen Anbieter. Du kannst ihm den Zugriff jederzeit unter Einstellungen → KI-Assistenten entziehen.",
 	allow: "Erlauben",
 	deny: "Ablehnen",
+	backToAssistant: "Zurück zum Assistenten",
 	didntWork: "Das hat nicht geklappt.",
 	tabAgents: "KI-Assistenten",
 	tabAgentsHint: "Über MCP verbundene Assistenten",

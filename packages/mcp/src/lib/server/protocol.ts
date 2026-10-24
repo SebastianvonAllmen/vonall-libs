@@ -17,6 +17,12 @@ export type ToolErgebnis = { ok: true; data: unknown } | { ok: false; message: s
  */
 export type ToolContext = { userId: string; clientId: string | null; locale: string; role: string | null };
 
+/**
+ * Whether a user may use an assistant at all (`createMcp({ admit })`): the endpoint answers every call of a refused user
+ * with 403 and the reason, the consent page shows the reason instead of "Allow".
+ */
+export type Admission = { ok: true } | { ok: false; reason: string };
+
 /** A tool: a thin wrapper around an application service, so an assistant is bound by the same rules as the UI. */
 export type Tool<S extends z.ZodType = z.ZodType> = {
 	name: string;
@@ -43,6 +49,15 @@ export type Prompt = {
 
 export const prompt = (p: Prompt): Prompt => p;
 
+/** The prompts a Product offers: a fixed list, or a function of who asks (e.g. by role), called on every `prompts/*` request. */
+export type Prompts = Prompt[] | ((ctx: ToolContext) => Promise<Prompt[]>);
+
+/** The prompts for this user; a function is asked per request. */
+export const promptsFor = async (prompts: Prompts, ctx: ToolContext): Promise<Prompt[]> => (typeof prompts === "function" ? await prompts(ctx) : prompts);
+
+/** Whether `initialize` advertises prompts: a function may have some for this user, a list when it is not empty. */
+export const offersPrompts = (prompts: Prompts): boolean => typeof prompts === "function" || prompts.length > 0;
+
 /** What the server says about itself in `initialize`. */
 export type ServerInfo = { name: string; version: string; instructions: string };
 
@@ -55,7 +70,7 @@ const fehler = (id: JsonRpcRequest["id"], code: number, message: string) => ({
 });
 
 /** Answers one JSON-RPC message; `null` for notifications, which get no response. */
-export async function handleMessage(message: unknown, ctx: ToolContext, tools: Tool[], server: ServerInfo, prompts: Prompt[] = []): Promise<object | null> {
+export async function handleMessage(message: unknown, ctx: ToolContext, tools: Tool[], server: ServerInfo, prompts: Prompts = []): Promise<object | null> {
 	const parsed = z
 		.object({ jsonrpc: z.literal("2.0"), id: z.union([z.string(), z.number(), z.null()]).optional(), method: z.string(), params: z.record(z.string(), z.unknown()).optional() })
 		.safeParse(message);
@@ -72,7 +87,7 @@ export async function handleMessage(message: unknown, ctx: ToolContext, tools: T
 				id: req.id,
 				result: {
 					protocolVersion,
-					capabilities: { tools: { listChanged: false }, ...(prompts.length > 0 ? { prompts: { listChanged: false } } : {}) },
+					capabilities: { tools: { listChanged: false }, ...(offersPrompts(prompts) ? { prompts: { listChanged: false } } : {}) },
 					serverInfo: { name: server.name, version: server.version },
 					instructions: server.instructions,
 				},
@@ -109,10 +124,10 @@ export async function handleMessage(message: unknown, ctx: ToolContext, tools: T
 			return {
 				jsonrpc: "2.0",
 				id: req.id,
-				result: { prompts: prompts.map(({ name, title, description, arguments: args }) => ({ name, title, description, arguments: args })) },
+				result: { prompts: (await promptsFor(prompts, ctx)).map(({ name, title, description, arguments: args }) => ({ name, title, description, arguments: args })) },
 			};
 		case "prompts/get": {
-			const p = prompts.find((x) => x.name === req.params?.name);
+			const p = (await promptsFor(prompts, ctx)).find((x) => x.name === req.params?.name);
 			if (!p) return fehler(req.id, -32602, `Unknown prompt: ${String(req.params?.name)}`);
 			const args = z.record(z.string(), z.string()).catch({}).parse(req.params?.arguments ?? {});
 			const fehlend = p.arguments.find((a) => a.required && !args[a.name]);

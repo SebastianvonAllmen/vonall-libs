@@ -31,6 +31,12 @@ export function agentRepo(ctx: McpContext) {
 			return rows.length === 1;
 		},
 
+		/** Whether the user allowed any assistant. */
+		async hasAny(userId: string): Promise<boolean> {
+			const rows = await db.select({ id: oauthConsent.id }).from(oauthConsent).where(eq(oauthConsent.userId, userId)).limit(1);
+			return rows.length === 1;
+		},
+
 		/** Takes the assistant's access away: its consent and every token it holds for the user. */
 		async revoke(userId: string, clientId: string) {
 			await db.transaction(async (tx) => {

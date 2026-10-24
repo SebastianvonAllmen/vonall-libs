@@ -10,7 +10,7 @@ import type { Handle } from "@sveltejs/kit/hooks";
 import { userRepo, type AuthContext } from "@vonall/auth/server";
 import { MCP_PATH } from "#lib/path.js";
 import { withMcp, type McpContext } from "#lib/server/context.js";
-import { handleMessage, type Prompt, type ServerInfo, type Tool, type ToolContext } from "#lib/server/protocol.js";
+import { handleMessage, type Admission, type Prompts, type ServerInfo, type Tool, type ToolContext } from "#lib/server/protocol.js";
 import { agentRepo } from "#lib/server/repositories/AgentRepo.js";
 import { crossSiteWrite } from "#lib/util/crossSiteWrite.js";
 
@@ -22,8 +22,14 @@ export type CreateMcpOptions = {
 	auth: AuthContext;
 	/** The Product's tools, each a thin wrapper around one of its services. */
 	tools: Tool[];
-	/** The prompts the Product offers (none by default). */
-	prompts?: Prompt[];
+	/** The prompts the Product offers (none by default): a list, or a function of the caller, asked on every `prompts/*` request. */
+	prompts?: Prompts;
+	/**
+	 * Who may use an assistant at all (everyone by default): called with the tool context after the token and consent
+	 * checks on every call; `{ ok: false, reason }` answers 403 with the reason, and the consent page shows the reason
+	 * instead of "Allow" (`consentLoad`'s `admission`).
+	 */
+	admit?: (ctx: ToolContext) => Promise<Admission>;
 	/** What `initialize` says about the server: the app's name, a version, the instructions every assistant reads first. */
 	serverInfo: ServerInfo;
 };
@@ -38,11 +44,15 @@ export type Mcp = {
 	oauth: Handle;
 	ctx: McpContext;
 	tools: Tool[];
-	prompts: Prompt[];
+	prompts: Prompts;
 	serverInfo: ServerInfo;
 	/** The context a tool call gets for this user (the role read once); the endpoint and `mcpTester` build it the same way. */
 	toolContext(userId: string, clientId: string | null): Promise<ToolContext>;
+	/** The `admit` option, `{ ok: true }` for everyone when none was given; the endpoint, `consentLoad` and `mcpTester` ask it. */
+	admit(ctx: ToolContext): Promise<Admission>;
 };
+
+const admitEveryone = async (): Promise<Admission> => ({ ok: true });
 
 const methodNotAllowed: RequestHandler = () => new Response("Method Not Allowed", { status: 405, headers: { Allow: "POST" } });
 
@@ -53,7 +63,7 @@ export function registrationOf(locals: object): Mcp {
 	return mcp;
 }
 
-export function createMcp({ auth, tools, prompts = [], serverInfo }: CreateMcpOptions): Mcp {
+export function createMcp({ auth, tools, prompts = [], serverInfo, admit = admitEveryone }: CreateMcpOptions): Mcp {
 	const ctx = withMcp(auth);
 	const agents = agentRepo(ctx);
 	const users = userRepo(ctx);
@@ -81,6 +91,12 @@ export function createMcp({ auth, tools, prompts = [], serverInfo }: CreateMcpOp
 						{ status: 401, headers: { "WWW-Authenticate": `Bearer error="invalid_token", resource_metadata="${resourceMetadata}"` } },
 					);
 				}
+				// The Product's gate (age, role, …) is asked on every call: a change counts at once, not at the next token
+				const toolCtx = await toolContext(userId, clientId);
+				const admission = await admit(toolCtx);
+				if (!admission.ok) {
+					return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32001, message: admission.reason } }, { status: 403 });
+				}
 				let body: unknown;
 				try {
 					body = await request.json();
@@ -90,7 +106,7 @@ export function createMcp({ auth, tools, prompts = [], serverInfo }: CreateMcpOp
 				if (Array.isArray(body)) {
 					return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Batching is not supported" } }, { status: 400 });
 				}
-				const response = await handleMessage(body, await toolContext(userId, clientId), tools, serverInfo, prompts);
+				const response = await handleMessage(body, toolCtx, tools, serverInfo, prompts);
 				return response ? Response.json(response) : new Response(null, { status: 202 });
 			},
 			{ resource },
@@ -115,6 +131,7 @@ export function createMcp({ auth, tools, prompts = [], serverInfo }: CreateMcpOp
 		prompts,
 		serverInfo,
 		toolContext,
+		admit,
 	};
 	return mcp;
 }
