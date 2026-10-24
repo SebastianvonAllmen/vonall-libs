@@ -34,7 +34,8 @@ export const { handle: sessionHandle, apiHandler, providers } = registerAuth(aut
 Entry points: `@vonall/auth` (types, validation schemas, `ac`/`roles` for the admin plugins, `isAdmin`, `mayInvite`, the
 fresh-session helpers, the messages), `@vonall/auth/schema`, `@vonall/auth/server`, `@vonall/auth/remote` (the remote
 functions a Product's components call), `@vonall/auth/testing` (`createUser`, `testAuth` for db tests). `better-auth` is
-this package's dependency; the Product imports its plugins from the same version.
+this package's dependency; the Product imports its plugins from the same version. `@node-rs/argon2` (the password
+hash, a native module) is a peer dependency: the Product lists it, so its server bundle can leave it external.
 
 Strings come in English and German: `configureAuthMessages({ locale, overrides })`. A Product's own user-owned tables
 reference `user.id` with `onDelete: "cascade"`, so deleting a Konto takes everything with it. The MCP endpoint's

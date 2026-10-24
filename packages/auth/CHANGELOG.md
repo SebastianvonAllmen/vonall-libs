@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.2.1
+
+### Patch Changes
+
+- `@node-rs/argon2` is a peer dependency: a native module has to be a direct dependency of the Product, so its server bundle can leave it external and resolve it at runtime.
+
 ## 0.2.0
 
 ### Minor Changes
