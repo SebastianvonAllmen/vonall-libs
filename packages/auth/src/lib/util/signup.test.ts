@@ -27,10 +27,14 @@ describe("the admin list", () => {
 		expect(isListed(["boss@example.com"], " BOSS@example.com ")).toBe(true);
 		expect(isListed(["boss@example.com"], null)).toBe(false);
 	});
-	it("lets a listed address in without an Einladung: confirmed at once, with a password only while mail works", () => {
+	it("lets a listed address in without an Einladung: confirmed at once, with a password while mail works", () => {
 		expect(signupState({ ...base, listed: true, confirmed: true, mail: false })).toBe("allowed");
 		expect(signupState({ ...base, listed: true })).toBe("allowed");
 		expect(signupState({ ...base, listed: true, mail: false })).toBe("no_mail");
+	});
+	it("without mail, a listed address may be the first account", () => {
+		expect(signupState({ ...base, listed: true, mail: false, accounts: 0 })).toBe("allowed");
+		expect(signupState({ ...base, listed: false, mail: false, accounts: 0 })).toBe("needs_einladung");
 	});
 	it("means nobody is first, and everyone else follows the mode", () => {
 		expect(signupState({ ...base, accounts: 0 })).toBe("needs_einladung");

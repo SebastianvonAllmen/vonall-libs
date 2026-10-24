@@ -30,9 +30,10 @@ export function isListed(list: string[], email: string | null | undefined): bool
 
 /**
  * Whether someone may create an account now.
- * - An address on the admin list (`listed`) always may: `confirmed` by its provider (Google, GitHub) it is the admin at
- *   once; with a password it needs mail for the confirmation link, and is the admin once the link is opened.
- * - Without an admin list the first account (the admin) always may; with one, nobody is first.
+ * - An address on the admin list (`listed`) may: `confirmed` by its provider (Google, GitHub) it is the admin at once;
+ *   with a password it needs mail for the confirmation link, and is the admin once the link is opened. Without mail
+ *   (local development) a listed address may be the first account, trusted like the first account below.
+ * - Without an admin list the first account (the admin) always may; with one, nobody else is first.
  * - After that `open` needs mail (the confirmation link), `invite` and `admin` a usable Einladung.
  */
 export function signupState(input: {
@@ -47,7 +48,7 @@ export function signupState(input: {
 	/** The Product has an admin list. */
 	adminList?: boolean;
 }): SignupState {
-	if (input.listed) return input.confirmed || input.mail ? "allowed" : "no_mail";
+	if (input.listed) return input.confirmed || input.mail || input.accounts === 0 ? "allowed" : "no_mail";
 	if (input.accounts === 0 && !input.adminList) return "allowed";
 	if (input.mode === "open") return input.mail ? "allowed" : "no_mail";
 	return input.einladungUsable ? "allowed" : "needs_einladung";
