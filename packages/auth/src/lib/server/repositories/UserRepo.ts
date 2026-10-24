@@ -68,8 +68,11 @@ export const UserRepo = {
 			.where(eq(schema.account.userId, userId));
 	},
 
-	/** Deletes the user; every row that belongs to them goes with it (foreign keys cascade). */
-	async deleteUser(userId: string): Promise<void> {
+	/**
+	 * Deletes the Konto: the user with everything that belongs to them (the foreign keys of every user-owned table
+	 * cascade, so a Product's own tables reference `user.id` with `onDelete: "cascade"`).
+	 */
+	async kontoLoeschen(userId: string): Promise<void> {
 		const { db, schema } = registry();
 		await db.delete(schema.user).where(eq(schema.user.id, userId));
 	},

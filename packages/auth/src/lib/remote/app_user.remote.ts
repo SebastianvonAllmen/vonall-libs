@@ -5,7 +5,6 @@ import { m } from "#lib/messages.js";
 import { adminQuery, adminSchemaCommand, protectedCommand, protectedForm, protectedQuery, protectedSchemaCommand } from "#lib/server/helpers.js";
 import { authInstance } from "#lib/server/registry.js";
 import { UserRepo } from "#lib/server/repositories/UserRepo.js";
-import { KontoService } from "#lib/server/service/konto.service.js";
 import { emailSchema, nameSchema, passwordSchema } from "#lib/types.js";
 import { isSessionNotFresh, reauthPath } from "#lib/util/fresh.js";
 
@@ -91,13 +90,13 @@ export const deleteUser = adminSchemaCommand(z.object({ userId: z.string() }), a
 	if (userId === admin.id) {
 		throw error(400, { message: m().ownAccount, id: "own_account", timestamp: new Date().toISOString() });
 	}
-	await KontoService.loeschen(userId);
+	await UserRepo.kontoLoeschen(userId);
 	await getAllUsers().refresh();
 	return { success: true };
 });
 
 /** Deletes the user's own account with all its data. */
 export const deleteOwnAccount = protectedCommand(async (user) => {
-	await KontoService.loeschen(user.id);
+	await UserRepo.kontoLoeschen(user.id);
 	return { success: true };
 });

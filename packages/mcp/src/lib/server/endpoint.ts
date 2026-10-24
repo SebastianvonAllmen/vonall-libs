@@ -8,7 +8,7 @@ import type { RequestHandler } from "@sveltejs/kit";
 import type { Handle } from "@sveltejs/kit/hooks";
 import { authInstance, authRegistry } from "@vonall/auth/server";
 import { handleMessage, type Prompt, type ServerInfo, type Tool } from "#lib/server/protocol.js";
-import { AgentService } from "#lib/server/service/agent.service.js";
+import { AgentRepo } from "#lib/server/repositories/AgentRepo.js";
 import { crossSiteWrite } from "#lib/util/crossSiteWrite.js";
 
 /** OAuth discovery for MCP clients (RFC 8414, RFC 9728, OIDC) at the domain root, answered by better-auth's MCP provider. */
@@ -69,7 +69,7 @@ function buildHandler({ tools, prompts, serverInfo }: Required<CreateMcpOptions>
 			const userId = claims.sub;
 			const clientId = typeof claims.client_id === "string" ? claims.client_id : typeof claims.azp === "string" ? claims.azp : null;
 			// The JWT alone stays valid until it expires; a revoked assistant or a deleted account must stop at once
-			if (!userId || !clientId || !(await AgentService.accessValid(userId, clientId))) {
+			if (!userId || !clientId || !(await AgentRepo.hasAccess(userId, clientId))) {
 				return Response.json(
 					{ jsonrpc: "2.0", id: null, error: { code: -32001, message: "Access was revoked" } },
 					{ status: 401, headers: { "WWW-Authenticate": `Bearer error="invalid_token", resource_metadata="${resourceMetadata}"` } },

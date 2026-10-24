@@ -20,7 +20,7 @@ export const mcp = createMcp({ tools: [tool({ name, description, input: z.object
 // Settings → AI assistants        <AgentsTab {appName} {locale} />   (from "@vonall/mcp/ui"), inside the Product's tab panel
 ```
 
-- Every call also checks that the user's consent still exists (`AgentService`), so revoking an assistant in the
+- Every call also checks that the user's consent still exists (`AgentRepo.hasAccess`), so revoking an assistant in the
   Agents tab takes effect at once.
 - `mcp.oauth` answers the `/.well-known/oauth-*` discovery documents and refuses cross-site writes: SvelteKit's own
   CSRF check must trust every origin (`csrf: { trustedOrigins: ["*"] }` in the Product's `vite.config.ts`) because

@@ -17,5 +17,4 @@ export { authInstance, registry as authRegistry, type AuthLog, type Db } from "#
 export { EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 export { UserRepo } from "#lib/server/repositories/UserRepo.js";
 export { EINLADUNG_COOKIE, EINLADUNG_GUELTIG_TAGE, EinladungService, type EinladungError } from "#lib/server/service/einladung.service.js";
-export { KontoService } from "#lib/server/service/konto.service.js";
 export { sendEinladungEmail, sendPasswordResetEmail, sendVerifyEmail } from "#lib/server/service/mail.js";

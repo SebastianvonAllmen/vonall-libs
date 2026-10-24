@@ -4,6 +4,7 @@ import { z } from "zod";
 import { m } from "#lib/messages.js";
 import { adminQuery, adminSchemaCommand, protectedQuery, protectedSchemaCommand } from "#lib/server/helpers.js";
 import { registry } from "#lib/server/registry.js";
+import { EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 import { EinladungService, type EinladungError } from "#lib/server/service/einladung.service.js";
 import { sendEinladungEmail } from "#lib/server/service/mail.js";
 import { emailSchema } from "#lib/types.js";
@@ -17,7 +18,7 @@ function unwrap<T>(result: Result<T, EinladungError>): T {
 
 /** The user's open Einladungen, and whether the server can send them by email. */
 export const getOffeneEinladungen = protectedQuery(async (user) => {
-	return { einladungen: await EinladungService.offene(user.id), mail: registry().mailer.enabled };
+	return { einladungen: await EinladungRepo.listOpenBy(user.id, new Date()), mail: registry().mailer.enabled };
 });
 
 /** Creates an Einladung; the link is returned only here. With an email, it is also sent (if mail is set up). */
@@ -49,11 +50,11 @@ export const withdrawEinladung = protectedSchemaCommand(z.object({ einladungId: 
 
 /** The Admin option: every open Einladung, and withdrawing any of them. */
 export const getAlleEinladungen = adminQuery(async () => {
-	return await EinladungService.alleOffenen();
+	return await EinladungRepo.listAllOpen(new Date());
 });
 
 export const adminWithdrawEinladung = adminSchemaCommand(z.object({ einladungId: z.string() }), async ({ einladungId }) => {
-	unwrap(await EinladungService.zurueckziehenAlsAdmin(einladungId));
+	unwrap(await EinladungService.zurueckziehen(null, einladungId));
 	await getAlleEinladungen().refresh();
 	await getOffeneEinladungen().refresh();
 });

@@ -1,9 +1,15 @@
 import { and, desc, eq } from "drizzle-orm";
 import { authRegistry } from "@vonall/auth/server";
 
-/** AI assistants (OAuth clients of the MCP endpoint) a user allowed, through their consent; over `@vonall/auth`'s tables. */
+/**
+ * AI assistants (Claude, ChatGPT, Le Chat, …; OAuth clients of the MCP endpoint) a user allowed through their consent,
+ * over `@vonall/auth`'s tables. Their access tokens are JWTs that stay valid until they expire, so the endpoint also
+ * checks the consent on every call (`hasAccess`): taking an assistant's access away works at once.
+ */
+export type ConnectedAgent = { clientId: string; name: string | null; uri: string | null; since: Date | null };
+
 export const AgentRepo = {
-	async listConnected(userId: string) {
+	async listConnected(userId: string): Promise<ConnectedAgent[]> {
 		const { db, schema } = authRegistry();
 		const { oauthClient, oauthConsent } = schema;
 		return await db

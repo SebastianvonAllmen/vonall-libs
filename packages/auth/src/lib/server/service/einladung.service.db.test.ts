@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { resetDatabase } from "../../../../../../tooling/db/reset";
 import { testDb } from "../../../../../../tooling/db/testDb";
 import { createUser, testAuth } from "#lib/testing/index.js";
+import { EinladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 import { UserRepo } from "#lib/server/repositories/UserRepo.js";
 import { EinladungService } from "./einladung.service";
 
@@ -61,21 +62,21 @@ describe("EinladungService", () => {
 		const sebastian = await createUser("sebastian@example.com");
 		const andere = await createUser("andere@example.com");
 		const { id, token } = await EinladungService.erstellen(sebastian, { email: "lena@example.com" });
-		expect(await EinladungService.offene(sebastian)).toMatchObject([{ id, email: "lena@example.com" }]);
+		expect(await EinladungRepo.listOpenBy(sebastian, new Date())).toMatchObject([{ id, email: "lena@example.com" }]);
 
 		expect((await EinladungService.zurueckziehen(andere, id)).isErr()).toBe(true);
 		(await EinladungService.zurueckziehen(sebastian, id))._unsafeUnwrap();
 
-		expect(await EinladungService.offene(sebastian)).toEqual([]);
+		expect(await EinladungRepo.listOpenBy(sebastian, new Date())).toEqual([]);
 		expect((await EinladungService.pruefen(token))._unsafeUnwrapErr().kind).toBe("unbekannt");
 	});
 
 	it("deletes an account with its Einladungen (the foreign keys cascade)", async () => {
 		const sebastian = await createUser("sebastian@example.com");
 		await EinladungService.erstellen(sebastian);
-		await UserRepo.deleteUser(sebastian);
+		await UserRepo.kontoLoeschen(sebastian);
 		expect(await UserRepo.getUserById(sebastian)).toBeNull();
-		expect(await EinladungService.alleOffenen()).toEqual([]);
+		expect(await EinladungRepo.listAllOpen(new Date())).toEqual([]);
 	});
 
 	describe("per signup mode", () => {

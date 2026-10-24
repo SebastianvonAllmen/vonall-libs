@@ -3,6 +3,7 @@
 	import { page } from "$app/state";
 	import { toast } from "svelte-sonner";
 	import { Button } from "#lib/components/ui/button/index.js";
+	import { messageOf } from "@vonall/auth";
 	import { m } from "#lib/messages.js";
 	import { getAgents, revokeAgent } from "#lib/remote/agent.remote.js";
 
@@ -25,7 +26,7 @@
 			await revokeAgent({ clientId });
 			toast.success(m().revoked(name));
 		} catch (e) {
-			toast.error((typeof e === "object" && e && "message" in e && typeof e.message === "string" && e.message) || m().revokeFailed);
+			toast.error(messageOf(e, m().revokeFailed));
 		}
 	}
 
