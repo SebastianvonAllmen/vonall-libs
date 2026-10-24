@@ -9,7 +9,7 @@ import type { AuthContext } from "#lib/server/context.js";
 import { einladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 import { userRepo } from "#lib/server/repositories/UserRepo.js";
 import type { EinladungInfo, SignupMode, SignupState } from "#lib/types.js";
-import { EINLADUNG_GUELTIG_TAGE, signupState } from "#lib/util/signup.js";
+import { EINLADUNG_GUELTIG_TAGE, isListed, signupState } from "#lib/util/signup.js";
 
 export { EINLADUNG_GUELTIG_TAGE };
 /** The cookie that carries an Einladung's token from its link through signup (email, Google or GitHub). */
@@ -51,18 +51,27 @@ export function einladungService(ctx: AuthContext) {
 
 		/**
 		 * Whether someone may create an account now, and if not, why (the signup mode decides, `signupState`); whether it
-		 * would be the very first account; and the Einladung the token stands for, if it is usable. One count, one lookup.
+		 * would be the very first account (the admin, only without an admin list); whether the address (`email`, known in
+		 * the signup hook, not on the page) is on the admin list; and the Einladung the token stands for, if it is usable.
+		 * One count, one lookup.
 		 */
 		async signup(
 			token: string | undefined,
-			options: { now?: Date; mode?: SignupMode; mail?: boolean } = {},
-		): Promise<{ state: SignupState; firstAccount: boolean; einladung: EinladungInfo | null }> {
-			const { now = new Date(), mode = ctx.signupMode, mail = ctx.mailer.enabled } = options;
+			options: { now?: Date; mode?: SignupMode; mail?: boolean; email?: string | null; confirmed?: boolean } = {},
+		): Promise<{ state: SignupState; firstAccount: boolean; listed: boolean; einladung: EinladungInfo | null }> {
+			const { now = new Date(), mode = ctx.signupMode, mail = ctx.mailer.enabled, confirmed = false } = options;
+			const adminList = ctx.adminEmails.length > 0;
+			const listed = isListed(ctx.adminEmails, options.email);
 			const accounts = await users.countUsers();
 			const geprueft = token ? await service.pruefen(token, now) : null;
 			const einladung = geprueft?.isOk() ? geprueft.value : null;
 			const einladungUsable = accounts > 0 && mode !== "open" && einladung !== null;
-			return { state: signupState({ mode, accounts, einladungUsable, mail }), firstAccount: accounts === 0, einladung };
+			return {
+				state: signupState({ mode, accounts, einladungUsable, mail, listed, confirmed, adminList }),
+				firstAccount: accounts === 0 && !adminList,
+				listed,
+				einladung,
+			};
 		},
 
 		/** Uses the Einladung for the new user: marks it as taken. */

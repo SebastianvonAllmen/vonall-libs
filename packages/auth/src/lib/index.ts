@@ -22,4 +22,4 @@ export { isSessionNotFresh, isStale, reauthPath, SESSION_NOT_FRESH } from "#lib/
 export { messageOf } from "#lib/util/messageOf.js";
 export { displayInitials, displayName, nameFromEmail } from "#lib/util/names.js";
 export { sameSitePath } from "#lib/util/sameSite.js";
-export { isAdmin, mayInvite, signupState } from "#lib/util/signup.js";
+export { adminList, isAdmin, isListed, mayInvite, signupState } from "#lib/util/signup.js";

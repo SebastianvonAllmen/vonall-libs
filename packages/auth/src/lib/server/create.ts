@@ -24,6 +24,7 @@ import { EINLADUNG_COOKIE, einladungService } from "#lib/server/service/einladun
 import { authMails } from "#lib/server/service/mail.js";
 import { MIN_PASSWORD_LENGTH, type SignupMode } from "#lib/types.js";
 import { nameFromEmail } from "#lib/util/names.js";
+import { adminList, isListed } from "#lib/util/signup.js";
 
 export type SocialProvider = { clientId: string; clientSecret: string };
 
@@ -48,6 +49,12 @@ export type CreateAuthOptions<S extends AuthSchema = AuthSchema> = {
 	rateLimitRules?: Record<string, { window: number; max: number }>;
 	/** The Product's own columns on `user` (`authSchema({ user })`), as better-auth's `additionalFields`: signup and `updateUser` then take them. */
 	userFields?: NonNullable<BetterAuthOptions["user"]>["additionalFields"];
+	/**
+	 * ADMIN_EMAILS as is (comma-separated): the addresses that are admins. They sign up without an Einladung and get the
+	 * role once the address is confirmed: by Google or GitHub at once, with a password through the mailed link (needs
+	 * mail); an existing account gets it at its next login. Set, the first account is no longer the admin. Admin option only.
+	 */
+	adminEmails?: string;
 	log?: AuthLog;
 };
 
@@ -100,6 +107,7 @@ export type AuthWiring<S extends AuthSchema = AuthSchema> = {
 export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>): AuthWiring<S> {
 	const { secret, origin, appName, signupMode, social = {}, rateLimitRules = {}, log = consoleLog } = options;
 	let instance: Auth | null = null;
+	const adminEmails = adminList(options.adminEmails);
 	const ctx: AuthContext<S> = {
 		db: options.db,
 		schema: options.schema,
@@ -110,6 +118,7 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 		mailer: options.mailer,
 		log,
 		admin: "role" in options.schema.user,
+		adminEmails,
 		mcp: "oauthClient" in options.schema,
 		providers: { github: hasKeys(social.github), google: hasKeys(social.google) },
 		get auth() {
@@ -121,6 +130,12 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 	const einladungen = einladungService(ctx);
 	const mails = authMails(ctx);
 	const baseURL = origin || "http://localhost";
+	/** The admin list grants the role, once the address is confirmed; it never takes it away. */
+	const listedAdmin = (user: { email?: string | null; emailVerified?: boolean | null }) => ctx.admin && isListed(adminEmails, user.email) && user.emailVerified === true;
+	const makeAdmin = async (userId: string, why: string) => {
+		log.info(why, { userId });
+		await users.setRole(userId, "admin");
+	};
 
 	const betterAuthOptions: BetterAuthOptions = {
 		appName,
@@ -154,8 +169,8 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 				create: {
 					before: async (user) => {
 						// The signup mode decides: an Einladung, or (open) mail for the confirmation link. The very first account
-						// (the admin) needs neither and counts as confirmed.
-						const { state, firstAccount } = await einladungen.signup(einladungAusCookie());
+						// (the admin, without an admin list) needs neither and counts as confirmed; a listed address needs no Einladung.
+						const { state, firstAccount } = await einladungen.signup(einladungAusCookie(), { email: user.email, confirmed: user.emailVerified === true });
 						if (state === "needs_einladung") throw new APIError("FORBIDDEN", { message: m().needsEinladung });
 						if (state === "no_mail") throw new APIError("FORBIDDEN", { message: m().noMail });
 						if (firstAccount) user.emailVerified = true;
@@ -164,16 +179,25 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 						return { data: user };
 					},
 					after: async (user) => {
-						// The first user becomes admin
-						if (ctx.admin && (await users.countUsers()) === 1) {
-							log.info("First user created, bootstrapping global role to admin");
-							await users.setRole(user.id, "admin");
-						}
+						// The first user becomes admin, unless the admin list says who is; a listed address its provider confirmed is
+						// the admin at once (the mailed link makes a password signup one, below)
+						if (ctx.admin && adminEmails.length === 0 && (await users.countUsers()) === 1) await makeAdmin(user.id, "First user created, bootstrapping global role to admin");
+						else if (listedAdmin(user)) await makeAdmin(user.id, "Listed address signed up confirmed, role admin");
 						const token = einladungAusCookie();
 						if (!token) return;
 						const angenommen = await einladungen.annehmen(user.id, token);
 						if (angenommen.isErr()) log.warn("Einladung could not be accepted after signup", { userId: user.id, kind: angenommen.error.kind });
 						getRequestEvent().cookies.delete(EINLADUNG_COOKIE, { path: "/" });
+					},
+				},
+			},
+			session: {
+				create: {
+					// An account that is on the admin list (added after it signed up) gets the role at its next login
+					after: async (session) => {
+						if (adminEmails.length === 0) return;
+						const user = await users.getUserById(session.userId);
+						if (user && user.role !== "admin" && listedAdmin(user)) await makeAdmin(user.id, "Listed address logged in, role admin");
 					},
 				},
 			},
@@ -189,11 +213,17 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 			},
 		},
 		emailVerification: {
-			sendOnSignUp: signupMode === "open",
+			// Signup mode open confirms every address; a listed address signing up with a password is confirmed the same way
+			sendOnSignUp: signupMode === "open" || adminEmails.length > 0,
 			sendOnSignIn: signupMode === "open",
 			autoSignInAfterVerification: true,
 			sendVerificationEmail: async ({ user, url }) => {
-				if (!user.emailVerified) await mails.verify(user, url);
+				if (user.emailVerified) return;
+				if (signupMode === "open" || (isListed(adminEmails, user.email) && ctx.mailer.enabled)) await mails.verify(user, url);
+			},
+			// A listed address confirmed through the link is the admin
+			afterEmailVerification: async (user) => {
+				if (listedAdmin({ ...user, emailVerified: true })) await makeAdmin(user.id, "Listed address confirmed, role admin");
 			},
 		},
 		socialProviders: {

@@ -1,7 +1,7 @@
 # @vonall/auth
 
 Accounts for a Web App Factory Product: better-auth with the signup hooks (signup modes `invite`, `open`, `admin`;
-the first account is the admin), Einladungen, Konto, the three account mails, the `protected…`/`admin…` helpers for
+the first account is the admin, or the addresses of `ADMIN_EMAILS`), Einladungen, Konto, the three account mails, the `protected…`/`admin…` helpers for
 remote functions, the remote functions of accounts and Einladungen, the auth routes' `load`s; Admin as an option.
 The pages and the settings tabs follow in a later release.
 
@@ -46,6 +46,15 @@ a remote function gets it with `authContext()`, a load with `contextOf(locals)`.
 Strings come in English and German: `configureAuthMessages({ locale, overrides })`. A Product's own user-owned tables
 reference `user.id` with `onDelete: "cascade"`, so deleting a Konto takes everything with it. The MCP endpoint's
 better-auth plugins and rate limit rule come from `@vonall/mcp` through `plugins` and `rateLimitRules`.
+
+## Who is the admin
+
+Without `adminEmails`, the very first account is the admin and needs neither an Einladung nor a confirmation. With
+`createAuth({ adminEmails: ADMIN_EMAILS })` (comma-separated, case doesn't matter) nobody is first: the listed
+addresses sign up without an Einladung and get the role once the address is confirmed, with Google or GitHub at
+once, with a password through the mailed confirmation link (so this needs mail; without it the signup says so). An
+account that was listed later gets the role at its next login. The list only grants the role; an admin takes it away
+in the user list. The signup page keeps showing its form when a list exists, with a hint for administrators.
 
 ## A Product's own fields of a person
 

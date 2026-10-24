@@ -45,7 +45,8 @@ export function userRepo(ctx: AuthContext) {
 		async insertUser(data: UserInsert): Promise<void> {
 			if (!data.name && data.email) data.name = nameFromEmail(data.email);
 			await db.insert(user).values(data);
-			if (admin && data.id && (await repo.countUsers()) === 1) await repo.setRole(data.id, "admin");
+			// The first account is the admin, unless the admin list says who is
+			if (admin && ctx.adminEmails.length === 0 && data.id && (await repo.countUsers()) === 1) await repo.setRole(data.id, "admin");
 		},
 
 		async getUserAccounts(userId: string) {
