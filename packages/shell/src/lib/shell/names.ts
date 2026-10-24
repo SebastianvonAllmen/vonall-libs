@@ -4,8 +4,9 @@ export function displayName(user: { name?: string | null; email: string } | null
 	return user.name?.trim() || user.email;
 }
 
-export function displayInitials(user: { name?: string | null; email: string }): string {
-	const words = (user.name ?? "").trim().split(/\s+/).filter(Boolean);
-	if (words.length > 0) return words.slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join("");
+/** The initials of the name the shell shows (`displayName`, or the Product's), else the email's first letter. */
+export function displayInitials(user: { name?: string | null; email: string }, name: string = user.name ?? ""): string {
+	const words = name.trim().split(/\s+/).filter(Boolean);
+	if (words.length > 0 && name.trim() !== user.email) return words.slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join("");
 	return user.email.charAt(0).toUpperCase() || "?";
 }

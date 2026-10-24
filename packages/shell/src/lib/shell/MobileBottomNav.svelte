@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { m } from "#lib/messages.js";
-	import { activeNavItem, href, type NavItem } from "#lib/nav.js";
+	import { activeTab, href, mobileTabs, type NavItem } from "#lib/nav.js";
 	import type { ShellUser } from "./AppShell.svelte";
 
-	/** The mobile tabs; the admin's pages only for the admin. */
-	let { user, navItems }: { user: ShellUser; navItems: readonly NavItem[] } = $props();
+	/** The mobile tabs (`mobileTabs`): the admin's pages only for the admin, `moreItem` last for the pages without a tab. */
+	let { user, navItems, moreItem }: { user: ShellUser; navItems: readonly NavItem[]; moreItem?: NavItem } = $props();
 
-	const tabs = $derived(navItems.filter((item) => !item.admin || user.role === "admin"));
-	const activeTab = $derived(activeNavItem(navItems, page.url.pathname)?.id ?? "home");
+	const tabs = $derived(mobileTabs(navItems, user, moreItem));
+	const active = $derived(activeTab(navItems, tabs, page.url.pathname, moreItem));
 </script>
 
 <nav
@@ -17,14 +17,14 @@
 	aria-label={m().mainNavigation}
 >
 	{#each tabs as tab (tab.id)}
-		{@const active = activeTab === tab.id}
+		{@const isActive = active === tab.id}
 		<a
 			href={href(tab.href)}
-			class="flex flex-col items-center gap-1 py-2.5 text-[11px] {active ? 'text-primary' : 'text-muted-foreground'}"
-			aria-current={active ? "page" : undefined}
+			class="flex flex-col items-center gap-1 py-2.5 text-[11px] {isActive ? 'text-primary' : 'text-muted-foreground'}"
+			aria-current={isActive ? "page" : undefined}
 		>
-			<tab.icon size={22} strokeWidth={active ? 2.4 : 1.9} />
-			<span>{tab.label}</span>
+			<tab.icon size={22} strokeWidth={isActive ? 2.4 : 1.9} />
+			<span class="max-w-full truncate px-1">{tab.label}</span>
 		</a>
 	{/each}
 </nav>
