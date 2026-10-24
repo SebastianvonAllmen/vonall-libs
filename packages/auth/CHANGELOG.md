@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.8.1
+
+### Patch Changes
+
+- [#22](https://github.com/SebastianvonAllmen/vonall-libs/pull/22) [`06fa87a`](https://github.com/SebastianvonAllmen/vonall-libs/commit/06fa87a26d31ae3eda0353a502e1e8390bca8ee4) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - Without mail, an address of `adminEmails` may be the first account (confirmed and admin, as the first account is without a list), so local development with `ADMIN_EMAILS` and no SMTP works; after that a password signup of a listed address still needs mail.
+
 ## 0.8.0
 
 ### Minor Changes

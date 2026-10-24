@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/auth",
-	"version": "0.8.0",
+	"version": "0.8.1",
 	"description": "Accounts for a Web App Factory Product: better-auth with the hooks, the protected helpers, Einladungen, Konto, the auth pages and the settings; Admin as an option",
 	"license": "MIT",
 	"repository": {
