@@ -74,7 +74,7 @@ createAuthClient({ plugins: [inferAdditionalFields({ user: { phone: { type: "str
 
 The Profile tab edits those columns when `SettingsPage` gets a `fields` snippet: it renders inside the name and email
 form and binds into `extra`, one key per `userFields` entry, filled from the page's `user` (`homeLayoutLoad` adds
-`userFields`); `updateUserProfile` takes the extra keys (strings, coerced to the field's `type`; an undeclared key is a
+`userFields`); hidden inputs carry `extra` along, so the snippet's inputs take no `name`. `updateUserProfile` takes the extra keys (strings, coerced to the field's `type`; an undeclared key is a
 400) and hands them to better-auth's `updateUser`. `setAuthUi({ authClient, displayName })` names a person from more
 than `user.name` wherever the components show one (the settings header, the mobile menu, the admin's list).
 

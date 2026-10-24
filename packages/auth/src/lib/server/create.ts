@@ -37,7 +37,8 @@ export const DEFAULT_ROLES: readonly string[] = ["admin", "user"];
 
 /**
  * A Product's hooks into accounts, each optional. Typed against its schema (`AuthHooks<typeof schema>`), so an
- * Einladung's own columns are typed in `afterUserCreate` and `afterEinladungAccepted`.
+ * Einladung's own columns are typed in `afterUserCreate` and `afterEinladungAccepted`. A hook that throws fails the
+ * request it runs in and nothing is rolled back: at signup the account exists and the Einladung is accepted by then.
  */
 export type AuthHooks<S extends AuthSchema = AuthSchema> = {
 	/** Before the account is written, after this package set its name: return the user, extra fields (`userFields`) set. */
