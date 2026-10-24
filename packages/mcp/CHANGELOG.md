@@ -1,5 +1,12 @@
 # @vonall/mcp
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [[`9bbe0a3`](https://github.com/SebastianvonAllmen/vonall-libs/commit/9bbe0a38ef597698673973353dcc763d8b2c3a67)]:
+  - @vonall/auth@0.8.0
+
 ## 0.5.0
 
 ### Minor Changes
