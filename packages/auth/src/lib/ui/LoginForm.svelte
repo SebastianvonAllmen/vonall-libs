@@ -9,7 +9,7 @@
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { m } from "#lib/messages.js";
-	import { authUi } from "#lib/ui/context.js";
+	import { authPageData, authUi } from "#lib/ui/context.js";
 	import { href } from "#lib/ui/href.js";
 	import SocialButton from "#lib/ui/SocialButton.svelte";
 	import Verify2FAForm from "#lib/ui/Verify2FAForm.svelte";
@@ -34,8 +34,7 @@
 	let forgotPasswordEmail = $state("");
 	let sendingResetLink = $state(false);
 
-	const providers = $derived(page.data.providers as { github?: boolean; google?: boolean } | undefined);
-	const mail = $derived(page.data.mail as boolean);
+	const { providers, mail } = $derived(authPageData("providers", "mail"));
 
 	// The reason the URL brought along (a refused social signup, a stale login); a fresh attempt replaces it
 	let urlError = $derived(page.url.searchParams.get("error"));

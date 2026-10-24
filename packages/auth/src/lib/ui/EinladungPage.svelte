@@ -3,11 +3,12 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { m } from "#lib/messages.js";
+	import type { einladungLoad } from "#lib/server/loads.js";
 	import { authUi } from "#lib/ui/context.js";
 	import { href } from "#lib/ui/href.js";
 
 	/** The page an Einladung link opens (`einladungLoad` gives `data`); `tagline` is the Product's one sentence about itself. */
-	let { data, tagline }: { data: { fehler: string | null; einladung: { inviterName: string } | null; eingeloggt: boolean }; tagline: string } = $props();
+	let { data, tagline }: { data: Awaited<ReturnType<typeof einladungLoad>>; tagline: string } = $props();
 	const { appName } = authUi();
 
 	const loginLink = $derived(`${href("/auth/login")}?redirectTo=${encodeURIComponent(page.url.pathname)}`);

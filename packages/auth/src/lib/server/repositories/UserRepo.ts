@@ -1,4 +1,4 @@
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, eq, getTableColumns } from "drizzle-orm";
 import type { FullSchema } from "#lib/schema/index.js";
 import type { AuthContext } from "#lib/server/context.js";
 import type { AppUserClient, UserInsert } from "#lib/types.js";
@@ -9,21 +9,11 @@ const rows = (list: Partial<AppUserClient>[]) => list as AppUserClient[];
 /** The accounts of the app the context belongs to. */
 export function userRepo(ctx: AuthContext) {
 	const { db, admin } = ctx;
-	// Every column on the type; the admin ones are only read with the option (`ctx.admin`)
+	// The type with every column; the admin ones are only written with the option (`ctx.admin`)
 	const { user, account } = ctx.schema as FullSchema;
 
-	/** The columns the client gets; the admin ones exist only with the admin option. */
-	const base = {
-		id: user.id,
-		email: user.email,
-		name: user.name,
-		createdAt: user.createdAt,
-		updatedAt: user.updatedAt,
-		twoFactorEnabled: user.twoFactorEnabled,
-		emailVerified: user.emailVerified,
-		image: user.image,
-	};
-	const selection = admin ? { ...base, role: user.role, banned: user.banned, banReason: user.banReason, banExpires: user.banExpires } : base;
+	// Every column: the admin ones exist only with the option, a Product's own ones come along
+	const selection = getTableColumns(user);
 
 	const repo = {
 		/** Every account, oldest first (the admin's list). */

@@ -46,6 +46,8 @@ export type CreateAuthOptions<S extends AuthSchema = AuthSchema> = {
 	social?: { github?: SocialProvider | null; google?: SocialProvider | null };
 	/** More rate limit rules, by path (`@vonall/mcp` adds `/oauth2/register`). */
 	rateLimitRules?: Record<string, { window: number; max: number }>;
+	/** The Product's own columns on `user` (`authSchema({ user })`), as better-auth's `additionalFields`: signup and `updateUser` then take them. */
+	userFields?: NonNullable<BetterAuthOptions["user"]>["additionalFields"];
 	log?: AuthLog;
 };
 
@@ -200,6 +202,7 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 		},
 		user: {
 			changeEmail: { enabled: true, updateEmailWithoutVerification: true },
+			additionalFields: options.userFields,
 		},
 		session: {
 			// No cookie cache: every request reads the session and the user, so a new role (the first account's, one set by

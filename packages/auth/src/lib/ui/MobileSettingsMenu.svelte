@@ -2,11 +2,11 @@
 	import { ChevronRight } from "@lucide/svelte";
 	import * as Avatar from "#lib/components/ui/avatar/index.js";
 	import { m } from "#lib/messages.js";
-	import type { AppUserClient } from "#lib/types.js";
+	import type { SessionUser } from "#lib/types.js";
 	import type { SettingsTabDef } from "#lib/ui/tabs.js";
 	import { displayInitials } from "#lib/util/names.js";
 
-	let { user, memberSince, tabs, onSelectTab }: { user: AppUserClient; memberSince: string; tabs: SettingsTabDef[]; onSelectTab: (tabName: string) => void } = $props();
+	let { user, memberSince, tabs, onSelectTab }: { user: SessionUser; memberSince: string; tabs: SettingsTabDef[]; onSelectTab: (tabName: string) => void } = $props();
 </script>
 
 <section class="panel flex items-center gap-4 p-5">

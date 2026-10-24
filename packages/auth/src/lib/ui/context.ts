@@ -6,7 +6,7 @@
  */
 import { getContext, setContext } from "svelte";
 import { page } from "$app/state";
-import type { AuthUiData } from "#lib/server/loads.js";
+import type { AuthPageData, AuthUiData } from "#lib/server/loads.js";
 
 type Outcome<T = unknown> = Promise<{ data?: T | null; error?: { message?: string; code?: string; status?: number } | null }>;
 type FetchCallbacks = {
@@ -50,7 +50,17 @@ export function setAuthUi({ authClient }: { authClient: AuthClientLike }): void 
 export function authUi(): AuthUi {
 	const authClient = getContext<AuthClientLike | undefined>(KEY);
 	if (!authClient) throw new Error("@vonall/auth: setAuthUi({ authClient }) has not run in the root layout");
-	const data = (page.data as { authUi?: AuthUiData }).authUi;
-	if (!data) throw new Error("@vonall/auth: this page's data has no `authUi`; its load or its layout's must be one of this package's (authLayoutLoad, homeLayoutLoad, einladungLoad)");
-	return { authClient, ...data };
+	return { authClient, ...authPageData("authUi").authUi };
+}
+
+/**
+ * The page data this package's loads put there, by key; throws when a key is missing, so a page whose load is not one of
+ * this package's says so instead of rendering nothing. Reactive when read inside `$derived`.
+ */
+export function authPageData<K extends keyof AuthPageData>(...keys: K[]): Pick<AuthPageData, K> {
+	const data = page.data as Partial<AuthPageData>;
+	for (const key of keys) {
+		if (!(key in data)) throw new Error(`@vonall/auth: the page data has no \`${key}\`; the route's load (or its layout's) must be one of this package's (authLayoutLoad, homeLayoutLoad, einladungLoad, signupLoad)`);
+	}
+	return data as Pick<AuthPageData, K>;
 }

@@ -3,7 +3,14 @@ import type { Component } from "svelte";
 import { m } from "#lib/messages.js";
 
 /** One settings tab: the desktop tab bar and the mobile menu are built from the list. */
-export type SettingsTabDef = { id: string; label: string; hint: string; icon: Component<{ size?: number | string; class?: string }> };
+export type SettingsTabDef = {
+	id: string;
+	label: string;
+	hint: string;
+	icon: Component<{ size?: number | string; class?: string }>;
+	/** One sentence the deletion tab adds about what goes with the account, e.g. connected assistants. */
+	deletionNote?: string;
+};
 
 /** This package's tabs, in order, in the configured language; a Product adds its own (e.g. the AI assistants) through `SettingsPage`. */
 export function settingsTabs(): SettingsTabDef[] {

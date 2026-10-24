@@ -1,18 +1,17 @@
 <script lang="ts">
 	import { Globe, LogOut, Monitor, Smartphone, Tablet, X } from "@lucide/svelte";
-	import { page } from "$app/state";
 	import { toast } from "svelte-sonner";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Tabs from "#lib/components/ui/tabs/index.js";
 	import { m } from "#lib/messages.js";
 	import { getSessions, revokeOthers, revokeSessionById } from "#lib/remote/app_user.remote.js";
-	import { authUi } from "#lib/ui/context.js";
+	import { authPageData, authUi } from "#lib/ui/context.js";
 	import { messageOf } from "#lib/util/messageOf.js";
 
 	/** The devices the user is logged in on. Only mounted while open: listing them needs a login from the last day. */
 	const { locale } = authUi();
 	const sessions = $derived(await getSessions());
-	const currentSessionId = $derived((page.data.session as { id?: string } | null | undefined)?.id);
+	const currentSessionId = $derived(authPageData("session").session.id);
 
 	async function handleRevoke(sessionId: string) {
 		try {
