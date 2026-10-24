@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.3.0
+
+### Minor Changes
+
+- The pages and the settings as components (`@vonall/auth/ui`): `LoginForm`, `RegisterForm`, `ResetPasswordForm`, `EinladungPage`, `SettingsPage` with its tabs (profile, security with two-factor, sessions, linked accounts, invitations, deletion, a Product's own), `AdminView`, `EinladungErstellen`; `setAuthUi({ authClient, appName, locale, signupMode })` in the root layout; every string in English and German.
+
 ## 0.2.1
 
 ### Patch Changes

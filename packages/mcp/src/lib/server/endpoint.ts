@@ -35,11 +35,35 @@ export type Mcp = {
 const methodNotAllowed: RequestHandler = () => new Response("Method Not Allowed", { status: 405, headers: { Allow: "POST" } });
 
 export function createMcp({ tools, prompts = [], serverInfo }: CreateMcpOptions): Mcp {
+	// The auth instance is read on the first request, not now: the Product's auth wiring imports this package's plugin
+	// options, so at module load the two may still be evaluating each other
+	let handler: ((request: Request) => Promise<Response>) | null = null;
+	const getHandler = () => (handler ??= buildHandler({ tools, prompts, serverInfo }));
+
+	/** OAuth discovery documents (answered by better-auth) and the origin check for writes (see crossSiteWrite). */
+	const oauth: Handle = async ({ event, resolve }) => {
+		if (OAUTH_DISCOVERY.test(event.url.pathname)) return authInstance().handler(event.request);
+		if (crossSiteWrite(event.request, event.url)) {
+			return new Response("Cross-site requests are forbidden", { status: 403 });
+		}
+		return resolve(event);
+	};
+
+	return {
+		POST: ({ request }) => getHandler()(request),
+		// Stateless server: no server-initiated stream and no sessions to delete
+		GET: methodNotAllowed,
+		DELETE: methodNotAllowed,
+		oauth,
+	};
+}
+
+function buildHandler({ tools, prompts, serverInfo }: Required<CreateMcpOptions>) {
 	const auth = authInstance();
 	const resource = `${authRegistry().origin || "http://localhost"}/api/mcp`;
 	const resourceMetadata = `${new URL(resource).origin}/.well-known/oauth-protected-resource/api/mcp`;
 
-	const handler = requireMcpAuth(
+	return requireMcpAuth(
 		auth as unknown as Parameters<typeof requireMcpAuth>[0],
 		async (request, claims) => {
 			const userId = claims.sub;
@@ -65,21 +89,4 @@ export function createMcp({ tools, prompts = [], serverInfo }: CreateMcpOptions)
 		},
 		{ resource },
 	);
-
-	/** OAuth discovery documents (answered by better-auth) and the origin check for writes (see crossSiteWrite). */
-	const oauth: Handle = async ({ event, resolve }) => {
-		if (OAUTH_DISCOVERY.test(event.url.pathname)) return auth.handler(event.request);
-		if (crossSiteWrite(event.request, event.url)) {
-			return new Response("Cross-site requests are forbidden", { status: 403 });
-		}
-		return resolve(event);
-	};
-
-	return {
-		POST: ({ request }) => handler(request),
-		// Stateless server: no server-initiated stream and no sessions to delete
-		GET: methodNotAllowed,
-		DELETE: methodNotAllowed,
-		oauth,
-	};
 }

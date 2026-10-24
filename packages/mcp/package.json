@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/mcp",
-	"version": "0.1.0",
+	"version": "0.1.2",
 	"description": "The MCP endpoint of a Web App Factory Product: JSON-RPC with tools and prompts, OAuth for AI assistants through better-auth, the consent page and the Agents tab",
 	"license": "MIT",
 	"repository": {

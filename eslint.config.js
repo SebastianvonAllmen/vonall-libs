@@ -105,8 +105,9 @@ export default ts.config(
 		},
 	},
 	{
-		// The shell links to the Product's pages by the paths its nav.ts gives (strings), prefixed with base
-		files: ["packages/shell/src/lib/**/*.svelte"],
+		// The packages' components link to the Product's pages by path (strings through $app/paths' resolve); the
+		// packages have no route ids to type them against
+		files: ["packages/shell/src/lib/**/*.svelte", "packages/*/src/lib/ui/**/*.svelte"],
 		rules: { "svelte/no-navigation-without-resolve": "off" },
 	},
 	{

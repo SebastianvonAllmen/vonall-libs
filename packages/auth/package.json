@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/auth",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"description": "Accounts for a Web App Factory Product: better-auth with the hooks, the protected helpers, Einladungen, Konto, the auth pages and the settings; Admin as an option",
 	"license": "MIT",
 	"repository": {
@@ -50,20 +50,26 @@
 		"./testing": {
 			"types": "./dist/testing/index.d.ts",
 			"default": "./dist/testing/index.js"
+		},
+		"./ui": {
+			"types": "./dist/ui/index.d.ts",
+			"svelte": "./dist/ui/index.js",
+			"default": "./dist/ui/index.js"
 		}
 	},
 	"peerDependencies": {
+		"@node-rs/argon2": "^2.2.2",
 		"@sveltejs/kit": "^3.1.0",
 		"drizzle-orm": "^0.45.4",
 		"neverthrow": "^8.2.0",
 		"pg": "^8.23.1",
 		"svelte": "^5.57.2",
-		"zod": "^4.6.7",
-		"@node-rs/argon2": "^2.2.2"
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
 		"@better-auth/mcp": "^1.7.12",
 		"@better-auth/oauth-provider": "^1.7.12",
+		"@node-rs/argon2": "^2.2.2",
 		"@sveltejs/kit": "^3.1.0",
 		"@sveltejs/package": "^3.0.1",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
@@ -78,8 +84,7 @@
 		"typescript": "^6.0.3",
 		"vite": "8.3.4",
 		"vitest": "^5.0.5",
-		"zod": "^4.6.7",
-		"@node-rs/argon2": "^2.2.2"
+		"zod": "^4.6.7"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",
@@ -92,7 +97,14 @@
 		"access": "public"
 	},
 	"dependencies": {
+		"@lucide/svelte": "1.22.0",
 		"@vonall/mail": "workspace:^",
-		"better-auth": "^1.7.12"
+		"better-auth": "^1.7.12",
+		"bits-ui": "^2.20.2",
+		"clsx": "^2.1.1",
+		"svelte-sonner": "^1.2.1",
+		"tailwind-merge": "^3.7.0",
+		"tailwind-variants": "^3.3.1",
+		"uqr": "^0.1.3"
 	}
 }
