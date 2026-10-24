@@ -51,9 +51,10 @@ export function einladungService(ctx: AuthContext) {
 
 		/**
 		 * Whether someone may create an account now, and if not, why (the signup mode decides, `signupState`); whether it
-		 * would be the very first account (the admin, only without an admin list); whether the address (`email`, known in
-		 * the signup hook, not on the page) is on the admin list; and the Einladung the token stands for, if it is usable.
-		 * One count, one lookup.
+		 * is the first account in the trusted sense (admin and confirmed without more: without an admin list the very first
+		 * one, with a list a listed address while the app is empty and mail is off); whether the address (`email`, known
+		 * in the signup hook, not on the page) is on the admin list; and the Einladung the token stands for, if it is
+		 * usable. One count, one lookup.
 		 */
 		async signup(
 			token: string | undefined,
@@ -68,7 +69,7 @@ export function einladungService(ctx: AuthContext) {
 			const einladungUsable = accounts > 0 && mode !== "open" && einladung !== null;
 			return {
 				state: signupState({ mode, accounts, einladungUsable, mail, listed, confirmed, adminList }),
-				firstAccount: accounts === 0 && !adminList,
+				firstAccount: accounts === 0 && (!adminList || (listed && !mail && !confirmed)),
 				listed,
 				einladung,
 			};

@@ -32,6 +32,10 @@ const wiring = createAuth({
 });
 const auth = betterAuth({ ...wiring.options, plugins: [twoFactor(), adminPlugin({ ac, roles })] });
 const { ctx } = wiring.register(auth);
+// The same list without mail (local development): the same database, its own instance
+const offline = createAuth({ db: handle.db, schema, secret: "test-secret-for-the-db-tests-only", origin: "http://localhost:5173", appName: "Test", locale: "en-GB", signupMode: "invite", mailer: createMailer({ smtp: null }), adminEmails: "boss@example.com" });
+const offlineAuth = betterAuth({ ...offline.options, plugins: [twoFactor(), adminPlugin({ ac, roles })] });
+offline.register(offlineAuth);
 const users = userRepo(ctx);
 const password = "correct horse battery";
 const roleOf = async (email: string) => (await users.getUserFromEmail(email))?.role;
@@ -67,6 +71,13 @@ describe("the admin list", () => {
 		expect((await einladungService(ctx).signup(undefined, { email: "BOSS@example.com", confirmed: true })).listed).toBe(true);
 		expect((await einladungService(ctx).signup(undefined, { email: "other@example.com" })).listed).toBe(false);
 		expect(sent).toHaveLength(0);
+	});
+
+	it("without mail, lets a listed address be the first account, confirmed and admin; the next one needs an Einladung", async () => {
+		const res = await offlineAuth.api.signUpEmail({ body: { email: "boss@example.com", password, name: "Boss" } });
+		expect(await users.getUserById(res.user.id)).toMatchObject({ role: "admin", emailVerified: true });
+		expect(sent).toHaveLength(0);
+		await expect(offlineAuth.api.signUpEmail({ body: { email: "later@example.com", password, name: "Later" } })).rejects.toMatchObject({ status: "FORBIDDEN" });
 	});
 
 	it("gives an existing, confirmed account on the list the role at its next login", async () => {

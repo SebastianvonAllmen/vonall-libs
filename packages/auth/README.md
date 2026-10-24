@@ -52,8 +52,9 @@ better-auth plugins and rate limit rule come from `@vonall/mcp` through `plugins
 Without `adminEmails`, the very first account is the admin and needs neither an Einladung nor a confirmation. With
 `createAuth({ adminEmails: ADMIN_EMAILS })` (comma-separated, case doesn't matter) nobody is first: the listed
 addresses sign up without an Einladung and get the role once the address is confirmed, with Google or GitHub at
-once, with a password through the mailed confirmation link (so this needs mail; without it the signup says so). An
-account that was listed later gets the role at its next login. The list only grants the role; an admin takes it away
+once, with a password through the mailed confirmation link. Without mail (local development), a listed address may be
+the first account, trusted as the first account is; after that a password signup needs mail. An account that was
+listed later gets the role at its next login. The list only grants the role; an admin takes it away
 in the user list. The signup page keeps showing its form when a list exists, with a hint for administrators.
 
 ## A Product's own fields of a person
