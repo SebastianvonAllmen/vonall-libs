@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from "svelte";
 	import { X } from "@lucide/svelte";
 	import { toast } from "svelte-sonner";
 	import * as Tabs from "#lib/components/ui/tabs/index.js";
@@ -9,7 +10,8 @@
 	import EinladungErstellen from "#lib/ui/EinladungErstellen.svelte";
 	import { messageOf } from "#lib/util/messageOf.js";
 
-	/** Signup is invite only: here a user creates Einladungen and sees the open ones. */
+	/** Signup is invite only: here a user creates Einladungen and sees the open ones; `einladungFields` is the Product's own fields of one. */
+	let { einladungFields }: { einladungFields?: Snippet<[Record<string, unknown>]> } = $props();
 	const { locale } = authUi();
 	const offen = $derived(await getOffeneEinladungen());
 	const datum = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" });
@@ -30,7 +32,7 @@
 		<p class="text-sm text-muted-foreground">{m().inviteIntro(EINLADUNG_GUELTIG_TAGE)}</p>
 	</div>
 
-	<EinladungErstellen />
+	<EinladungErstellen {einladungFields} />
 
 	{#if offen.einladungen.length > 0}
 		<ul class="grid gap-2 text-sm">

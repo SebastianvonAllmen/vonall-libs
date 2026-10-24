@@ -9,15 +9,19 @@ import { bigint, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqu
 
 /** A Product's own columns on `user` (`{ phone: text("phone") }`); better-auth learns them through `createAuth({ userFields })`. */
 export type UserExtra = Record<string, PgColumnBuilderBase>;
+/** A Product's own columns on `einladung` (`{ rolle: text("rolle").notNull().default("user") }`): what an Einladung hands to the account it creates. */
+export type EinladungExtra = Record<string, PgColumnBuilderBase>;
 type NoExtra = Record<never, never>;
 
-export type SchemaOptions<A extends boolean = boolean, M extends boolean = boolean, U extends UserExtra = NoExtra> = {
+export type SchemaOptions<A extends boolean = boolean, M extends boolean = boolean, U extends UserExtra = NoExtra, E extends EinladungExtra = NoExtra> = {
 	/** The Admin option: `role`, `banned`, `banReason`, `banExpires` on `user`, `impersonatedBy` on `session`. */
 	admin?: A;
 	/** The tables of the OAuth provider for the MCP endpoint (`@vonall/mcp`). */
 	mcp?: M;
 	/** The Product's own columns on `user`, for what better-auth sets at signup; anything with its own life gets its own table. */
 	user?: U;
+	/** The Product's own columns on `einladung`: set when it is created (`createAuth({ einladung })`), read when it is accepted (`hooks`). */
+	einladung?: E;
 };
 
 const userColumns = () => ({
@@ -112,26 +116,28 @@ function buildShared(user: UserRef) {
 		lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 	});
 
-	/**
-	 * An Einladung into the app: signup is invite only once the first account (the admin) exists. A link works once,
-	 * until it expires; only the SHA-256 hash of its token is stored, the link is shown once when it is created.
-	 */
-	const einladung = pgTable("einladung", {
-		id: text("id").primaryKey(),
-		tokenHash: text("token_hash").notNull().unique(),
-		createdBy: text("created_by")
-			.notNull()
-			.references(() => user.id, { onDelete: "cascade" }),
-		/** Set when the Einladung was sent by email, so the inviter recognises it in the list. */
-		email: text("email"),
-		expiresAt: timestamp("expires_at", { precision: 6, withTimezone: true }).notNull(),
-		acceptedAt: timestamp("accepted_at", { precision: 6, withTimezone: true }),
-		acceptedBy: text("accepted_by").references(() => user.id, { onDelete: "set null" }),
-		createdAt: timestamp("created_at", { precision: 6, withTimezone: true }).notNull().defaultNow(),
-	});
-
-	return { account, verification, twoFactor, rateLimit, einladung };
+	return { account, verification, twoFactor, rateLimit };
 }
+
+/**
+ * An Einladung into the app: signup is invite only once the first account (the admin) exists. A link works once,
+ * until it expires; only the SHA-256 hash of its token is stored, the link is shown once when it is created.
+ */
+const einladungColumns = (user: UserRef) => ({
+	id: text("id").primaryKey(),
+	tokenHash: text("token_hash").notNull().unique(),
+	createdBy: text("created_by")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	/** Set when the Einladung was sent by email, so the inviter recognises it in the list. */
+	email: text("email"),
+	expiresAt: timestamp("expires_at", { precision: 6, withTimezone: true }).notNull(),
+	acceptedAt: timestamp("accepted_at", { precision: 6, withTimezone: true }),
+	acceptedBy: text("accepted_by").references(() => user.id, { onDelete: "set null" }),
+	createdAt: timestamp("created_at", { precision: 6, withTimezone: true }).notNull().defaultNow(),
+});
+export type EinladungTable<E extends EinladungExtra = NoExtra> = TableOf<"einladung", ReturnType<typeof einladungColumns> & E>;
+const buildEinladung = <E extends EinladungExtra>(user: UserRef, extra: E): EinladungTable<E> => pgTable("einladung", { ...einladungColumns(user), ...extra });
 
 function buildMcp(user: UserRef, session: SessionTable) {
 	/** Signing keys of the OAuth provider (better-auth `jwt` plugin); MCP access tokens are JWTs signed with them. */
@@ -317,11 +323,11 @@ function buildMcp(user: UserRef, session: SessionTable) {
 	return { jwks, oauthClient, oauthResource, oauthClientResource, oauthRefreshToken, oauthAccessToken, oauthConsent, oauthClientAssertion };
 }
 
-export type SharedTables = ReturnType<typeof buildShared>;
+export type SharedTables<E extends EinladungExtra = NoExtra> = ReturnType<typeof buildShared> & { einladung: EinladungTable<E> };
 export type McpTables = ReturnType<typeof buildMcp>;
 
-/** The tables for the options given: `user` and `session` with or without the admin columns, the `mcp` tables or not. */
-export type AuthSchema<A extends boolean = boolean, M extends boolean = boolean, U extends UserExtra = NoExtra> = SharedTables & {
+/** The tables for the options given: `user` and `session` with or without the admin columns, the `mcp` tables or not, a Product's columns on `user` and `einladung`. */
+export type AuthSchema<A extends boolean = boolean, M extends boolean = boolean, U extends UserExtra = NoExtra, E extends EinladungExtra = NoExtra> = SharedTables<E> & {
 	user: A extends true ? UserAdminTable<U> : UserTable<U>;
 	session: A extends true ? SessionAdminTable : SessionTable;
 } & (M extends true ? McpTables : Record<never, never>);
@@ -329,12 +335,15 @@ export type AuthSchema<A extends boolean = boolean, M extends boolean = boolean,
 /** Every table with every option: what the package's own code is typed against (an option that is off leaves its columns unused). */
 export type FullSchema = AuthSchema<true, true>;
 
-export function authSchema<A extends boolean = false, M extends boolean = false, U extends UserExtra = NoExtra>(options: SchemaOptions<A, M, U> = {}): AuthSchema<A, M, U> {
+export function authSchema<A extends boolean = false, M extends boolean = false, U extends UserExtra = NoExtra, E extends EinladungExtra = NoExtra>(
+	options: SchemaOptions<A, M, U, E> = {},
+): AuthSchema<A, M, U, E> {
 	const admin = options.admin ?? false;
 	const mcp = options.mcp ?? false;
 	const extra = options.user ?? ({} as U);
 	const user = admin ? buildUserAdmin(extra) : buildUser(extra);
 	const session: SessionTable = admin ? buildSessionAdmin(user) : buildSession(user);
-	const tables = { user, session, ...buildShared(user), ...(mcp ? buildMcp(user, session) : {}) };
-	return tables as unknown as AuthSchema<A, M, U>;
+	const einladung = buildEinladung(user, options.einladung ?? ({} as E));
+	const tables = { user, session, einladung, ...buildShared(user), ...(mcp ? buildMcp(user, session) : {}) };
+	return tables as unknown as AuthSchema<A, M, U, E>;
 }

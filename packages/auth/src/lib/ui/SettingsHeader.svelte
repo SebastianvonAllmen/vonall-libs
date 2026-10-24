@@ -2,9 +2,11 @@
 	import * as Avatar from "#lib/components/ui/avatar/index.js";
 	import { m } from "#lib/messages.js";
 	import type { SessionUser } from "#lib/types.js";
-	import { displayInitials, displayName } from "#lib/util/names.js";
+	import { authUi } from "#lib/ui/context.js";
+	import { displayInitials } from "#lib/util/names.js";
 
 	let { user }: { user: SessionUser | null | undefined } = $props();
+	const { displayName } = authUi();
 </script>
 
 <div class="flex items-center gap-6">

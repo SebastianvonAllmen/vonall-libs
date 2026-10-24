@@ -1,6 +1,6 @@
 // The pages and the settings of accounts, for a Product's routes; `setAuthUi({ … })` in its root layout first
 export { default as AdminView } from "#lib/ui/AdminView.svelte";
-export { authPageData, authUi, setAuthUi, type AuthClientLike, type AuthUi } from "#lib/ui/context.js";
+export { authPageData, authUi, setAuthUi, type AuthClientLike, type AuthUi, type DisplayName } from "#lib/ui/context.js";
 export { default as EinladungErstellen } from "#lib/ui/EinladungErstellen.svelte";
 export { default as EinladungPage } from "#lib/ui/EinladungPage.svelte";
 export { default as LoginForm } from "#lib/ui/LoginForm.svelte";

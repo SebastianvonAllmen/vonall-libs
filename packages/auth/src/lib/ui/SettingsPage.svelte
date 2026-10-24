@@ -20,15 +20,33 @@
 	/**
 	 * The settings page (`homeLayoutLoad` gives `user`, `session`, `providers` and `einladen` in the page data): on
 	 * desktop a tab bar, on mobile a menu and one tab at a time, `?tab=` either way. A Product adds its own tabs with
-	 * `extraTabs` (their definitions) and `extra` (their content, given the tab id), e.g. the AI assistants of `@vonall/mcp`;
-	 * `profile` renders below the name and email form, for the Product's own fields of a person.
+	 * `extraTabs` (their definitions, `after` places one) and `extra` (their content, given the tab id), e.g. the AI
+	 * assistants of `@vonall/mcp`; `fields` renders inside the name and email form (the Product's own columns on `user`,
+	 * bound into `extra`), `profile` below it (its own form on its own table); `einladungFields` reaches the Invitations
+	 * tab's form, `invitations: false` hides that tab, `menuFooter` ends the mobile menu.
 	 */
-	let { extraTabs = [], extra, profile }: { extraTabs?: SettingsTabDef[]; extra?: Snippet<[string]>; profile?: Snippet } = $props();
+	let {
+		extraTabs = [],
+		extra,
+		profile,
+		fields,
+		einladungFields,
+		invitations = true,
+		menuFooter,
+	}: {
+		extraTabs?: SettingsTabDef[];
+		extra?: Snippet<[string]>;
+		profile?: Snippet;
+		fields?: Snippet<[Record<string, string | null>]>;
+		einladungFields?: Snippet<[Record<string, unknown>]>;
+		invitations?: boolean;
+		menuFooter?: Snippet;
+	} = $props();
 	const { appName, locale } = authUi();
 
 	const { user, einladen } = $derived(authPageData("user", "einladen"));
 	// Only the tabs this user sees: ?tab=invitations without the right to invite falls back to the profile
-	const tabs = $derived(visibleTabs(einladen, extraTabs));
+	const tabs = $derived(visibleTabs(einladen, extraTabs, invitations));
 	const ids = $derived(tabs.map((t) => t.id));
 	const isTab = (value: string | null): value is string => value !== null && ids.includes(value);
 
@@ -65,7 +83,7 @@
 	<!-- Mobile: a menu, then one tab at a time -->
 	<div class="w-full space-y-4 md:hidden">
 		{#if !hasTabParam}
-			<MobileSettingsMenu {user} {memberSince} {tabs} onSelectTab={selectTab} />
+			<MobileSettingsMenu {user} {memberSince} {tabs} onSelectTab={selectTab} footer={menuFooter} />
 		{:else}
 			<div class="panel flex items-center gap-3 p-3">
 				<button onclick={() => selectTab("")} class="rounded-full p-2 text-muted-foreground hover:bg-accent" aria-label={m().backToOverview}>
@@ -80,12 +98,12 @@
 	</div>
 
 	<div class={hasTabParam ? "mt-4 block w-full" : "mt-4 hidden w-full md:block"}>
-		<ProfileManagementTab {user}>{@render profile?.()}</ProfileManagementTab>
+		<ProfileManagementTab {user} {fields}>{@render profile?.()}</ProfileManagementTab>
 		<SecurityTab />
 		<!-- Only while open: listing the sessions needs a login from the last day, which only this tab should ask for -->
 		{#if activeTab === "sessions"}<SessionsTab />{/if}
 		<LinksTab />
-		{#if einladen}<InvitationsTab />{/if}
+		{#if einladen && invitations}<InvitationsTab {einladungFields} />{/if}
 		{#each extraTabs as tab (tab.id)}
 			<Tabs.Content value={tab.id} class="panel mt-6 p-6 md:p-8">{@render extra?.(tab.id)}</Tabs.Content>
 		{/each}

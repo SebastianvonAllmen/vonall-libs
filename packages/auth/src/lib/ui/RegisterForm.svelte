@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from "svelte";
 	import { LoaderCircle } from "@lucide/svelte";
 	import { goto } from "$app/navigation";
 	import { Button } from "#lib/components/ui/button/index.js";
@@ -11,9 +12,13 @@
 	import SocialButton from "#lib/ui/SocialButton.svelte";
 	import { cn } from "#lib/utils.js";
 
-	/** The signup page: what `signupLoad` allows (the signup mode, the Einladung), then email and password or a social login. */
-	const { class: className, ...restProps }: { class?: string } = $props();
+	/**
+	 * The signup page: what `signupLoad` allows (the signup mode, the Einladung), then email and password or a social
+	 * login. `redirectTo` is where a new account lands (default `/home`), `description` replaces the lines under the title.
+	 */
+	const { class: className, redirectTo, description, ...restProps }: { class?: string; redirectTo?: string; description?: Snippet } = $props();
 	const { authClient, appName } = authUi();
+	const target = $derived(redirectTo ?? href("/home"));
 
 	let email = $state("");
 	let password = $state("");
@@ -39,7 +44,7 @@
 		}
 		const name = email.split("@")[0]; // the server turns it into a readable name
 		await authClient.signUp.email(
-			{ email, password, name, callbackURL: href("/home") },
+			{ email, password, name, callbackURL: target },
 			{
 				onRequest: () => {
 					loading = true;
@@ -50,7 +55,7 @@
 					const data = ctx.data as { token?: string | null; user?: { emailVerified?: boolean } } | null;
 					// No session yet when the email address has to be confirmed first (signup mode open)
 					if (!data?.token) done = data?.user?.emailVerified ? "login" : "confirm";
-					else await goto(href("/home"), { replaceState: true });
+					else await goto(target, { replaceState: true });
 				},
 				onError: async (ctx) => {
 					errorMessage =
@@ -66,11 +71,15 @@
 	<Card.Root>
 		<Card.Header class="text-center">
 			<Card.Title class="text-xl">{m().createAccount}</Card.Title>
-			{#if einladung}
-				<Card.Description>{m().invitesYouTo(einladung.inviterName, appName)}</Card.Description>
-			{/if}
-			{#if erlaubt && (providers?.github || providers?.google)}
-				<Card.Description>{m().signUpWith(providerNames)}</Card.Description>
+			{#if description}
+				{@render description()}
+			{:else}
+				{#if einladung}
+					<Card.Description>{m().invitesYouTo(einladung.inviterName, appName)}</Card.Description>
+				{/if}
+				{#if erlaubt && (providers?.github || providers?.google)}
+					<Card.Description>{m().signUpWith(providerNames)}</Card.Description>
+				{/if}
 			{/if}
 		</Card.Header>
 		<Card.Content>
@@ -103,8 +112,8 @@
 						{/if}
 						{#if providers?.github || providers?.google}
 							<div class="flex flex-col gap-4">
-								{#if providers.github}<SocialButton provider="github" />{/if}
-								{#if providers.google}<SocialButton provider="google" />{/if}
+								{#if providers.github}<SocialButton provider="github" callbackURL={target} />{/if}
+								{#if providers.google}<SocialButton provider="google" callbackURL={target} />{/if}
 							</div>
 							<div class="relative text-center text-sm">
 								<span class="relative z-10 bg-card px-2 text-muted-foreground">{m().orWithEmail}</span>

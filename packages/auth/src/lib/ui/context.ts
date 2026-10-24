@@ -7,6 +7,7 @@
 import { getContext, setContext } from "svelte";
 import { page } from "$app/state";
 import type { AuthPageData, AuthUiData } from "#lib/server/loads.js";
+import { displayName as defaultDisplayName } from "#lib/util/names.js";
 
 type Outcome<T = unknown> = Promise<{ data?: T | null; error?: { message?: string; code?: string; status?: number } | null }>;
 type FetchCallbacks = {
@@ -37,20 +38,24 @@ export type AuthClientLike = {
 	unlinkAccount(body: { accountId: string; providerId?: string }): Outcome;
 };
 
-export type AuthUi = AuthUiData & { authClient: AuthClientLike };
+/** How a person is named in the UI (the settings header, the mobile menu, the admin's list); the default is the name, else the email. */
+export type DisplayName = (user: { name?: string | null; email: string } & Record<string, unknown>) => string;
 
+export type AuthUi = AuthUiData & { authClient: AuthClientLike; displayName: DisplayName };
+
+type UiContext = { authClient: AuthClientLike; displayName: DisplayName };
 const KEY = Symbol("vonall-auth-ui");
 
-/** In the Product's root layout. */
-export function setAuthUi({ authClient }: { authClient: AuthClientLike }): void {
-	setContext(KEY, authClient);
+/** In the Product's root layout; `displayName` when a person's name is more than `user.name` (a surname of the Product's own). */
+export function setAuthUi({ authClient, displayName = defaultDisplayName }: { authClient: AuthClientLike; displayName?: DisplayName }): void {
+	setContext<UiContext>(KEY, { authClient, displayName });
 }
 
-/** In a component: the client, and the app's facts from the page data. */
+/** In a component: the client, the name formatter, and the app's facts from the page data. */
 export function authUi(): AuthUi {
-	const authClient = getContext<AuthClientLike | undefined>(KEY);
-	if (!authClient) throw new Error("@vonall/auth: setAuthUi({ authClient }) has not run in the root layout");
-	return { authClient, ...authPageData("authUi").authUi };
+	const ui = getContext<UiContext | undefined>(KEY);
+	if (!ui) throw new Error("@vonall/auth: setAuthUi({ authClient }) has not run in the root layout");
+	return { ...ui, ...authPageData("authUi").authUi };
 }
 
 /**

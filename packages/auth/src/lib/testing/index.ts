@@ -11,10 +11,10 @@ import type { AuthContext, Db } from "#lib/server/context.js";
 import { createAuth, type CreateAuthOptions } from "#lib/server/create.js";
 import { userRepo } from "#lib/server/repositories/UserRepo.js";
 
-/** Creates a user directly (the first one becomes admin, as in the app) and returns its id. */
-export async function createUser(ctx: AuthContext, email = "user@example.com"): Promise<string> {
+/** Creates a user directly (the first one becomes admin, as in the app; the name derives from the email unless given) and returns its id. */
+export async function createUser(ctx: AuthContext, email = "user@example.com", name = ""): Promise<string> {
 	const id = crypto.randomUUID();
-	await userRepo(ctx).insertUser({ id, email, name: "", emailVerified: true, createdAt: new Date(), updatedAt: new Date() });
+	await userRepo(ctx).insertUser({ id, email, name, emailVerified: true, createdAt: new Date(), updatedAt: new Date() });
 	return id;
 }
 

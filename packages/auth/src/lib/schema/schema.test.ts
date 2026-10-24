@@ -33,4 +33,12 @@ describe("authSchema", () => {
 		expect(Object.keys(getTableColumns(s.user))).toEqual(expect.arrayContaining(["id", "role", "phone"]));
 		expect(s.user.phone.name).toBe("phone");
 	});
+
+	it("takes a Product's own columns on einladung", () => {
+		expect(Object.keys(getTableColumns(authSchema().einladung))).toEqual(["id", "tokenHash", "createdBy", "email", "expiresAt", "acceptedAt", "acceptedBy", "createdAt"]);
+		const s = authSchema({ einladung: { rolle: text("rolle").notNull().default("user") } });
+		expect(Object.keys(getTableColumns(s.einladung))).toEqual(expect.arrayContaining(["id", "tokenHash", "rolle"]));
+		expect(s.einladung.rolle.name).toBe("rolle");
+		expect(getTableName(s.einladung)).toBe("einladung");
+	});
 });

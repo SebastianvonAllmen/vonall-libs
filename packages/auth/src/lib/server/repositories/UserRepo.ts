@@ -10,7 +10,7 @@ const rows = (list: Partial<AppUserClient>[]) => list as AppUserClient[];
 export function userRepo(ctx: AuthContext) {
 	const { db, admin } = ctx;
 	// The type with every column; the admin ones are only written with the option (`ctx.admin`)
-	const { user, account } = ctx.schema as FullSchema;
+	const { user, account, session } = ctx.schema as FullSchema;
 
 	// Every column: the admin ones exist only with the option, a Product's own ones come along
 	const selection = getTableColumns(user);
@@ -41,6 +41,15 @@ export function userRepo(ctx: AuthContext) {
 			await db.update(user).set({ role }).where(eq(user.id, userId));
 		},
 
+		/** Admin option only: bans (with a reason, no expiry) or unbans; a ban ends the user's sessions at once. */
+		async setBanned(userId: string, banned: boolean, reason?: string): Promise<void> {
+			await db
+				.update(user)
+				.set({ banned, banReason: banned ? (reason ?? null) : null, banExpires: null })
+				.where(eq(user.id, userId));
+			if (banned) await db.delete(session).where(eq(session.userId, userId));
+		},
+
 		/** Creates a user outside better-auth's signup (tests, scripts); the first one becomes admin like any other. */
 		async insertUser(data: UserInsert): Promise<void> {
 			if (!data.name && data.email) data.name = nameFromEmail(data.email);
@@ -55,9 +64,11 @@ export function userRepo(ctx: AuthContext) {
 
 		/**
 		 * Deletes the Konto: the user with everything that belongs to them (the foreign keys of every user-owned table
-		 * cascade, so a Product's own tables reference `user.id` with `onDelete: "cascade"`).
+		 * cascade, so a Product's own tables reference `user.id` with `onDelete: "cascade"`). The Product's
+		 * `beforeUserDelete` hook runs first, for what lives outside the database (a Strava connection to revoke).
 		 */
 		async kontoLoeschen(userId: string): Promise<void> {
+			await ctx.hooks.beforeUserDelete?.(userId);
 			await db.delete(user).where(eq(user.id, userId));
 		},
 	};
