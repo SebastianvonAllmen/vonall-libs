@@ -40,8 +40,8 @@ PostgreSQL 18, better-auth, neverthrow, Zod v4, Vitest, pnpm workspace, changese
 ## Git and pull requests
 
 - GitHub, public, default branch `main`; `gh` is logged in. Conventional Commits.
-- Stack pull requests: each branch `dev/<topic>` off the top of the current stack (off `main` only when nothing is
-  open), its pull request targeting that branch, opened as a draft (CI skips drafts) and marked ready after
-  `pnpm ci:local` passes. Merging is the author's; list the merge order, bottom first.
+- Every pull request targets `main`: a branch `dev/<topic>`, opened as a draft (CI skips drafts) and marked ready
+  after `pnpm ci:local` passes. Work that builds on an open pull request branches off that branch, but its pull request
+  targets `main` too (the diff shrinks when the parent merges). Merging is the author's; any order is safe.
 - Merging to `main` lets the release workflow open "chore: version packages"; merging that publishes. Nothing
   publishes from a branch.
