@@ -1,5 +1,8 @@
 import type { SignupMode, SignupState } from "#lib/types.js";
 
+/** How long an Einladung's link works. */
+export const EINLADUNG_GUELTIG_TAGE = 14;
+
 /** Whether a user is an admin. Works without the admin option too: the user then has no role and nobody is. */
 export function isAdmin(user: object | null | undefined): boolean {
 	return Boolean(user && "role" in user && user.role === "admin");

@@ -3,6 +3,7 @@
 	import { toast } from "svelte-sonner";
 	import * as Tabs from "#lib/components/ui/tabs/index.js";
 	import { m } from "#lib/messages.js";
+	import { EINLADUNG_GUELTIG_TAGE } from "#lib/util/signup.js";
 	import { getOffeneEinladungen, withdrawEinladung } from "#lib/remote/einladung.remote.js";
 	import { authUi } from "#lib/ui/context.js";
 	import EinladungErstellen from "#lib/ui/EinladungErstellen.svelte";
@@ -26,7 +27,7 @@
 <Tabs.Content value="invitations" class="panel mt-6 grid gap-4 p-6 md:p-8">
 	<div class="space-y-1">
 		<h3 class="text-lg font-medium">{m().inviteSomeone}</h3>
-		<p class="text-sm text-muted-foreground">{m().inviteIntro}</p>
+		<p class="text-sm text-muted-foreground">{m().inviteIntro(EINLADUNG_GUELTIG_TAGE)}</p>
 	</div>
 
 	<EinladungErstellen />

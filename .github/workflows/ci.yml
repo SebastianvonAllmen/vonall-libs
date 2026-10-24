@@ -41,8 +41,10 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Build first: a package imports its workspace siblings through their dist (the exports map), so check and
+      # the tests of auth, mcp and shell need messages, mail and auth built
+      - run: pnpm build
       - run: pnpm check
       - run: pnpm lint
       - run: pnpm test:unit
       - run: pnpm test:db
-      - run: pnpm build

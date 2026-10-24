@@ -3,6 +3,8 @@
  * (from the UI release on) what the pages show. A Product calls configureAuthMessages once, from a module its root
  * layout and its server wiring import, with its LOCALE and the few words it wants differently; code reads `m()`.
  */
+import { defineMessages } from "@vonall/messages";
+
 export const en = {
 	// Signup
 	needsEinladung: "Signing up needs an invitation",
@@ -70,7 +72,6 @@ export const en = {
 	resetLinkNotSent: "The reset link could not be sent.",
 	resetLinkSent: "If an account with this email address exists, a link to reset the password has been sent.",
 	resetLinkNotRequested: "The reset link could not be requested.",
-	invalidEmailDot: "Please enter a valid email address.",
 	// Two-factor on login
 	twoFactorTitle: "Two-factor authentication",
 	twoFactorEnterCode: "Enter the 6-digit code from your authenticator app.",
@@ -89,7 +90,6 @@ export const en = {
 	inviteOnly: (app: string) => `${app} is invite only. Ask someone who already has an account for an invitation link and open it on this device.`,
 	alreadyHaveAccount: "Already have an account?",
 	repeatPassword: "Repeat the password",
-	passwordsDontMatchDot: "The passwords don't match.",
 	needsValidEinladung: "Signing up needs a valid invitation.",
 	emailInUse: "This email address is already in use.",
 	signupFailed: "Signing up failed.",
@@ -98,7 +98,6 @@ export const en = {
 	resetIntro: "Enter your new password",
 	resetNoToken: "No valid token found. Please request a new link to reset your password.",
 	resetLinkInvalid: "The reset link is invalid or incomplete.",
-	passwordTooShortDot: (min: number) => `The password needs at least ${min} characters.`,
 	newPassword: "New password",
 	confirmNewPassword: "Confirm the new password",
 	savePassword: "Save the password",
@@ -210,7 +209,7 @@ export const en = {
 	providerNotUnlinked: (provider: string) => `${provider} could not be unlinked`,
 	// Invitations
 	inviteSomeone: "Invite someone",
-	inviteIntro: "An invitation link works once and for 14 days. Whoever opens it can create an account.",
+	inviteIntro: (days: number) => `An invitation link works once and for ${days} days. Whoever opens it can create an account.`,
 	linkWord: "Link",
 	validUntil: (date: string) => `valid until ${date}`,
 	withdrawInvitation: "Withdraw invitation",
@@ -320,7 +319,6 @@ export const de: AuthMessages = {
 	resetLinkNotSent: "Der Link zum Zurücksetzen konnte nicht verschickt werden.",
 	resetLinkSent: "Wenn es ein Konto mit dieser E-Mail-Adresse gibt, ist ein Link zum Zurücksetzen des Passworts unterwegs.",
 	resetLinkNotRequested: "Der Link zum Zurücksetzen konnte nicht angefordert werden.",
-	invalidEmailDot: "Bitte gib eine gültige E-Mail-Adresse ein.",
 	twoFactorTitle: "Zwei-Faktor-Authentisierung",
 	twoFactorEnterCode: "Gib den 6-stelligen Code aus deiner Authenticator-App ein.",
 	confirm: "Bestätigen",
@@ -337,7 +335,6 @@ export const de: AuthMessages = {
 	inviteOnly: (app) => `${app} gibt es nur auf Einladung. Frag jemanden, der schon ein Konto hat, nach einem Einladungslink und öffne ihn auf diesem Gerät.`,
 	alreadyHaveAccount: "Schon ein Konto?",
 	repeatPassword: "Passwort wiederholen",
-	passwordsDontMatchDot: "Die Passwörter stimmen nicht überein.",
 	needsValidEinladung: "Zum Registrieren braucht es eine gültige Einladung.",
 	emailInUse: "Diese E-Mail-Adresse wird schon verwendet.",
 	signupFailed: "Die Registrierung hat nicht geklappt.",
@@ -345,7 +342,6 @@ export const de: AuthMessages = {
 	resetIntro: "Gib dein neues Passwort ein",
 	resetNoToken: "Kein gültiger Link. Bitte fordere einen neuen Link zum Zurücksetzen an.",
 	resetLinkInvalid: "Der Link zum Zurücksetzen ist ungültig oder unvollständig.",
-	passwordTooShortDot: (min) => `Das Passwort braucht mindestens ${min} Zeichen.`,
 	newPassword: "Neues Passwort",
 	confirmNewPassword: "Neues Passwort bestätigen",
 	savePassword: "Passwort speichern",
@@ -451,7 +447,7 @@ export const de: AuthMessages = {
 	providerNotLinked: (provider) => `${provider} konnte nicht verknüpft werden`,
 	providerNotUnlinked: (provider) => `${provider} konnte nicht getrennt werden`,
 	inviteSomeone: "Jemanden einladen",
-	inviteIntro: "Ein Einladungslink funktioniert einmal und 14 Tage lang. Wer ihn öffnet, kann ein Konto erstellen.",
+	inviteIntro: (days) => `Ein Einladungslink funktioniert einmal und ${days} Tage lang. Wer ihn öffnet, kann ein Konto erstellen.`,
 	linkWord: "Link",
 	validUntil: (date) => `gültig bis ${date}`,
 	withdrawInvitation: "Einladung zurückziehen",
@@ -496,13 +492,4 @@ export const de: AuthMessages = {
 	didntWork: "Das hat nicht geklappt.",
 };
 
-export type Locale = "en" | "de";
-
-let current: AuthMessages = en;
-
-export function configureAuthMessages({ locale, overrides }: { locale: Locale; overrides?: Partial<AuthMessages> }) {
-	current = { ...(locale === "de" ? de : en), ...overrides };
-}
-
-/** The configured messages. */
-export const m = (): AuthMessages => current;
+export const { m, configure: configureAuthMessages } = defineMessages({ en, de });

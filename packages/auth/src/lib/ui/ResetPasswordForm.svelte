@@ -30,11 +30,11 @@
 			return;
 		}
 		if (password.length < MIN_PASSWORD_LENGTH) {
-			toast.error(m().passwordTooShortDot(MIN_PASSWORD_LENGTH));
+			toast.error(m().passwordTooShort(MIN_PASSWORD_LENGTH));
 			return;
 		}
 		if (password !== confirmPassword) {
-			toast.error(m().passwordsDontMatchDot);
+			toast.error(m().passwordsMismatch);
 			return;
 		}
 		loading = true;

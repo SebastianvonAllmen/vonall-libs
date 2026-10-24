@@ -2,6 +2,8 @@
  * The shell's strings, in English and German (Swiss spelling). A Product calls configureShellMessages once, from the
  * module its root layout imports; the components read `m()`.
  */
+import { defineMessages } from "@vonall/messages";
+
 export const en = {
 	administration: "Administration",
 	administrator: "Administrator",
@@ -26,13 +28,4 @@ export const de: ShellMessages = {
 	switchTheme: "Zwischen hell und dunkel wechseln",
 };
 
-export type Locale = "en" | "de";
-
-let current: ShellMessages = en;
-
-export function configureShellMessages({ locale, overrides }: { locale: Locale; overrides?: Partial<ShellMessages> }) {
-	current = { ...(locale === "de" ? de : en), ...overrides };
-}
-
-/** The configured messages. */
-export const m = (): ShellMessages => current;
+export const { m, configure: configureShellMessages } = defineMessages({ en, de });

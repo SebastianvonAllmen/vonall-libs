@@ -54,7 +54,7 @@
 	async function requestPasswordReset(e: SubmitEvent) {
 		e.preventDefault();
 		if (!forgotPasswordEmail || !forgotPasswordEmail.includes("@")) {
-			toast.error(m().invalidEmailDot);
+			toast.error(m().invalidEmail);
 			return;
 		}
 		sendingResetLink = true;

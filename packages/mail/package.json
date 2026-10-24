@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/mail",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "Mail over any SMTP server for a Web App Factory Product: a Mailer, the EmailLayout frame and renderMail",
 	"license": "MIT",
 	"repository": {
@@ -63,6 +63,7 @@
 		"access": "public"
 	},
 	"dependencies": {
+		"@vonall/messages": "workspace:^",
 		"nodemailer": "^10.2.1"
 	}
 }

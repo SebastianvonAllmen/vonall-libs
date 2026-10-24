@@ -1,6 +1,6 @@
 // What both the browser and the server may import; the server side is `@vonall/auth/server`, the browser's client
 // `@vonall/auth/client`, the remote functions `@vonall/auth/remote`, the tables `@vonall/auth/schema`.
-export { configureAuthMessages, m, type AuthMessages, type Locale } from "#lib/messages.js";
+export { configureAuthMessages, m, type AuthMessages } from "#lib/messages.js";
 export { ac, adminRole, roles, userRole } from "#lib/permissions.js";
 export {
 	emailSchema,

@@ -1,6 +1,6 @@
 {
 	"name": "@vonall/shell",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "The app shell behind login of a Web App Factory Product: sidebar, mobile header and tabs, breadcrumbs, the account menu",
 	"license": "MIT",
 	"repository": {
@@ -68,6 +68,7 @@
 		"access": "public"
 	},
 	"dependencies": {
+		"@vonall/messages": "workspace:^",
 		"clsx": "^2.1.1",
 		"tailwind-merge": "^3.7.0",
 		"tailwind-variants": "^3.3.1"
