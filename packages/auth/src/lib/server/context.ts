@@ -7,7 +7,7 @@ import { getRequestEvent } from "$app/server";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Mailer } from "@vonall/mail";
 import type { AuthSchema } from "#lib/schema/index.js";
-import type { Auth } from "#lib/server/create.js";
+import type { Auth, AuthHooks, EinladungOptions, UserFields } from "#lib/server/create.js";
 import type { SignupMode } from "#lib/types.js";
 
 // Any Drizzle schema generic: a Product's `drizzle(url)` may carry one or none
@@ -43,6 +43,14 @@ export type AuthContext<S extends AuthSchema = AuthSchema> = {
 	mcp: boolean;
 	/** The social logins that have keys. */
 	providers: { github: boolean; google: boolean };
+	/** The Product's hooks into signup, Einladungen and deletion (`createAuth({ hooks })`); none by default. */
+	hooks: AuthHooks<S>;
+	/** The roles an admin may hand out (`createAuth({ roles })`, default admin and user). */
+	roles: readonly string[];
+	/** How a Product's own columns on `einladung` are set (`createAuth({ einladung })`): none allowed by default. */
+	einladung: EinladungOptions;
+	/** The Product's own columns on `user` as better-auth knows them (`createAuth({ userFields })`); the profile form edits them. */
+	userFields: UserFields;
 	/** The Product's instance; reading it before `register()` throws. */
 	readonly auth: Auth;
 };

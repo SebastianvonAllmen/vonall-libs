@@ -8,7 +8,7 @@ import { m } from "#lib/messages.js";
 import type { AuthContext } from "#lib/server/context.js";
 import { einladungRepo } from "#lib/server/repositories/EinladungRepo.js";
 import { userRepo } from "#lib/server/repositories/UserRepo.js";
-import type { EinladungInfo, SignupMode, SignupState } from "#lib/types.js";
+import type { EinladungInfo, EinladungRow, SessionUser, SignupMode, SignupState } from "#lib/types.js";
 import { EINLADUNG_GUELTIG_TAGE, isListed, signupState } from "#lib/util/signup.js";
 
 export { EINLADUNG_GUELTIG_TAGE };
@@ -16,6 +16,8 @@ export { EINLADUNG_GUELTIG_TAGE };
 export const EINLADUNG_COOKIE = "einladung";
 
 export type EinladungError = { kind: "unbekannt" | "abgelaufen" | "angenommen"; message: string };
+/** Why a Product's own fields of a new Einladung were refused: not valid (`input`), or not this user's to set (`authorize`). */
+export type EinladungExtrasError = { kind: "ungueltig" | "verboten"; message: string };
 
 const hash = (token: string) => createHash("sha256").update(token).digest("hex");
 
@@ -31,22 +33,42 @@ export function einladungService(ctx: AuthContext) {
 	const users = userRepo(ctx);
 
 	const service = {
-		/** Creates an Einladung and returns its token, shown only this once. */
-		async erstellen(userId: string, input: { email?: string | null } = {}, now = new Date()): Promise<{ id: string; token: string; expiresAt: Date }> {
+		/**
+		 * Creates an Einladung and returns its token, shown only this once. Keys of `input` beyond `email` are a Product's
+		 * own columns on `einladung` (`authSchema({ einladung })`); they come back with the result.
+		 */
+		async erstellen(userId: string, input: { email?: string | null } & Record<string, unknown> = {}, now = new Date()): Promise<{ id: string; token: string; expiresAt: Date } & Record<string, unknown>> {
+			const { email, ...extras } = input;
 			const token = randomBytes(24).toString("base64url");
 			const id = crypto.randomUUID();
 			const expiresAt = new Date(now.getTime() + EINLADUNG_GUELTIG_TAGE * 24 * 60 * 60 * 1000);
-			await repo.insert({ id, tokenHash: hash(token), createdBy: userId, email: input.email ?? null, expiresAt });
-			return { id, token, expiresAt };
+			await repo.insert({ ...extras, id, tokenHash: hash(token), createdBy: userId, email: email ?? null, expiresAt });
+			return { ...extras, id, token, expiresAt };
 		},
 
-		/** What the link offers, if it can still be used. */
+		/**
+		 * The Product's own fields of an Einladung to create, as `createEinladung` received them: parsed by
+		 * `createAuth({ einladung: { input } })` (none allowed without it), then `authorize` may refuse them for this user.
+		 */
+		async extrasPruefen(extras: Record<string, unknown>, user: SessionUser): Promise<Result<Record<string, unknown>, EinladungExtrasError>> {
+			const { input, authorize } = ctx.einladung;
+			if (!input) {
+				const keys = Object.keys(extras);
+				return keys.length === 0 ? ok({}) : err({ kind: "ungueltig", message: m().einladungUnknownFields(keys.map((k) => `"${k}"`).join(", ")) });
+			}
+			const parsed = input.safeParse(extras);
+			if (!parsed.success) return err({ kind: "ungueltig", message: parsed.error.issues[0]?.message ?? m().einladungInvalidFields });
+			const refused = authorize ? await authorize(parsed.data, user) : null;
+			return refused ? err({ kind: "verboten", message: refused }) : ok(parsed.data);
+		},
+
+		/** What the link offers, if it can still be used: the row with the inviter's name, a Product's own columns included. */
 		async pruefen(token: string, now = new Date()): Promise<Result<EinladungInfo, EinladungError>> {
 			const row = await repo.getByTokenHash(hash(token));
 			if (!row) return err(fehler.unbekannt());
 			if (row.acceptedAt) return err(fehler.angenommen());
 			if (row.expiresAt <= now) return err(fehler.abgelaufen());
-			return ok({ id: row.id, inviterName: row.inviterName, expiresAt: row.expiresAt });
+			return ok(row);
 		},
 
 		/**
@@ -75,12 +97,17 @@ export function einladungService(ctx: AuthContext) {
 			};
 		},
 
-		/** Uses the Einladung for the new user: marks it as taken. */
-		async annehmen(userId: string, token: string, now = new Date()): Promise<Result<void, EinladungError>> {
+		/**
+		 * Uses the Einladung for the user: marks it as taken and runs the Product's `afterEinladungAccepted` hook (the one
+		 * place it runs: at signup and when a logged-in user accepts). Returns the row, a Product's own columns included.
+		 */
+		async annehmen(userId: string, token: string, now = new Date()): Promise<Result<EinladungRow, EinladungError>> {
 			const info = await service.pruefen(token, now);
 			if (info.isErr()) return err(info.error);
-			if (!(await repo.accept(info.value.id, userId, now))) return err(fehler.angenommen());
-			return ok(undefined);
+			const row = await repo.accept(info.value.id, userId, now);
+			if (!row) return err(fehler.angenommen());
+			await ctx.hooks.afterEinladungAccepted?.(userId, row);
+			return ok(row);
 		},
 
 		/** Withdraws an open Einladung of the user, or any open one when `userId` is null (the admin). */

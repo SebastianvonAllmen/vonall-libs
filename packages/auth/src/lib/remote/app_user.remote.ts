@@ -7,19 +7,27 @@ import { authContext } from "#lib/server/context.js";
 import { userRepo } from "#lib/server/repositories/UserRepo.js";
 import { emailSchema, nameSchema, passwordSchema } from "#lib/types.js";
 import { isSessionNotFresh, reauthPath } from "#lib/util/fresh.js";
+import { parseUserFields } from "#lib/util/userFields.js";
 
 /** The Admin option: every account. */
 export const getAllUsers = adminQuery(async () => {
 	return await userRepo(authContext()).getAllUsers();
 });
 
-export const updateUserProfile = protectedForm(z.object({ name: nameSchema, email: emailSchema }), async (data, _issue, user) => {
-	const { auth } = authContext();
+/**
+ * Name and email, and the Product's own columns on `user` (`createAuth({ userFields })`): any further key must be one of
+ * them, a string the field's type is read from (a 400 otherwise); better-auth's `updateUser` writes them.
+ */
+export const updateUserProfile = protectedForm(z.object({ name: nameSchema, email: emailSchema }).catchall(z.string()), async (data, _issue, user) => {
+	const { auth, userFields } = authContext();
 	const event = getRequestEvent();
-	if (data.email !== user.email) {
-		await auth.api.changeEmail({ body: { newEmail: data.email }, headers: event.request.headers });
+	const { name, email, ...rest } = data;
+	const extras = parseUserFields(rest, userFields);
+	if (extras.isErr()) throw error(400, { message: m().unknownField(extras.error), id: "user_fields", timestamp: new Date().toISOString() });
+	if (email !== user.email) {
+		await auth.api.changeEmail({ body: { newEmail: email }, headers: event.request.headers });
 	}
-	await auth.api.updateUser({ body: { name: data.name }, headers: event.request.headers });
+	await auth.api.updateUser({ body: { ...extras.value, name }, headers: event.request.headers });
 	return { success: true };
 });
 
@@ -75,12 +83,16 @@ export const getLinkedAccounts = protectedQuery(async (user) => {
 	return await userRepo(authContext()).getUserAccounts(user.id);
 });
 
-/** The Admin option. */
-export const setUserRole = adminSchemaCommand(z.object({ userId: z.string(), role: z.enum(["admin", "user"]) }), async ({ userId, role }, admin) => {
+/** The Admin option: one of the roles of `createAuth({ roles })` (default admin and user). */
+export const setUserRole = adminSchemaCommand(z.object({ userId: z.string(), role: z.string() }), async ({ userId, role }, admin) => {
+	const ctx = authContext();
 	if (userId === admin.id) {
 		throw error(400, { message: m().ownRole, id: "own_role", timestamp: new Date().toISOString() });
 	}
-	await userRepo(authContext()).setRole(userId, role);
+	if (!ctx.roles.includes(role)) {
+		throw error(400, { message: m().unknownRole(role), id: "unknown_role", timestamp: new Date().toISOString() });
+	}
+	await userRepo(ctx).setRole(userId, role);
 	await getAllUsers().refresh();
 	return { success: true };
 });

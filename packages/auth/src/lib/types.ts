@@ -1,7 +1,7 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 import { m } from "#lib/messages.js";
-import type { FullSchema } from "#lib/schema/index.js";
+import type { AuthSchema, FullSchema } from "#lib/schema/index.js";
 
 /**
  * How people get an account (the Factory's GLOSSARY, "Signup mode"); a Product sets it in its `config.ts`.
@@ -30,19 +30,18 @@ export type AppUserClient = UserSelect;
 /** The logged-in user of the current request, as better-auth puts it into `locals`. */
 export type SessionUser = NonNullable<App.Locals["user"]>;
 
-/** What an Einladung link offers, shown before signing up. */
-export type EinladungInfo = {
-	id: string;
-	inviterName: string;
-	expiresAt: Date;
-};
+/**
+ * An Einladung as the repository reads it: every column but the token's hash, a Product's own columns included. Typed
+ * against the Product's schema where it is known (`EinladungRow<typeof schema>` in its hooks); the package's own code
+ * reads the extras as `unknown`.
+ */
+export type EinladungRow<S extends AuthSchema = FullSchema> = Omit<InferSelectModel<S["einladung"]>, "tokenHash"> & Record<string, unknown>;
 
-export type OffeneEinladung = {
-	id: string;
-	email: string | null;
-	expiresAt: Date;
-	createdAt: Date;
-};
+/** What an Einladung link offers, shown before signing up: the row with the inviter's name; a Product's own columns come along. */
+export type EinladungInfo = EinladungRow & { inviterName: string };
+
+/** An open Einladung in the inviter's list; a Product's own columns come along. */
+export type OffeneEinladung = EinladungRow;
 
 // The messages are read when a value is checked, not when the module loads, so the Product's configure… call comes first
 export const emailSchema = z.email({ error: () => m().invalidEmail });

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from "svelte";
 	import { Copy, Share2 } from "@lucide/svelte";
 	import { toast } from "svelte-sonner";
 	import { Button } from "#lib/components/ui/button/index.js";
@@ -8,11 +9,17 @@
 	import { authUi } from "#lib/ui/context.js";
 	import { messageOf } from "#lib/util/messageOf.js";
 
-	/** Creates an Einladung (a link, optionally sent by email) and shows the link once; in the settings and for the admin. */
+	/**
+	 * Creates an Einladung (a link, optionally sent by email) and shows the link once; in the settings and for the admin.
+	 * `einladungFields` renders inside the form: the Product's own columns on `einladung`, bound into `extras`, which go
+	 * along with the email (`createAuth({ einladung })` checks them) and are cleared once the Einladung exists.
+	 */
+	let { einladungFields }: { einladungFields?: Snippet<[Record<string, unknown>]> } = $props();
 	const { appName } = authUi();
 	const mail = $derived((await getOffeneEinladungen()).mail);
 
 	let email = $state("");
+	let extras = $state<Record<string, unknown>>({});
 	let busy = $state(false);
 	let link = $state<string | null>(null);
 
@@ -22,11 +29,12 @@
 		event.preventDefault();
 		busy = true;
 		try {
-			const result = await createEinladung({ email: email.trim() || null });
+			const result = await createEinladung({ ...$state.snapshot(extras), email: email.trim() || null });
 			link = result.link;
 			if (result.mailFehler) toast.error(m().shareYourself(result.mailFehler));
 			else if (email.trim()) toast.success(m().invitationSentTo(email.trim()));
 			email = "";
+			extras = {};
 		} catch (e) {
 			toast.error(messageOf(e, m().invitationNotCreated));
 		} finally {
@@ -57,6 +65,7 @@
 	{#if mail}
 		<Input type="email" bind:value={email} placeholder={m().emailOptional} autocomplete="off" class="min-w-56 flex-1" />
 	{/if}
+	{@render einladungFields?.(extras)}
 	<Button type="submit" disabled={busy} class="cursor-pointer">{busy ? m().creating : m().createInvitation}</Button>
 </form>
 

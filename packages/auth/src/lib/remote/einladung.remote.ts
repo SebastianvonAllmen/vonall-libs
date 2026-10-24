@@ -22,14 +22,20 @@ export const getOffeneEinladungen = protectedQuery(async (user) => {
 	return { einladungen: await einladungRepo(ctx).listOpenBy(user.id, new Date()), mail: ctx.mailer.enabled };
 });
 
-/** Creates an Einladung; the link is returned only here. With an email, it is also sent (if mail is set up). */
-export const createEinladung = protectedSchemaCommand(z.object({ email: emailSchema.nullable() }), async ({ email }, user) => {
+/**
+ * Creates an Einladung; the link is returned only here. With an email, it is also sent (if mail is set up). Keys beyond
+ * `email` are the Product's own columns on `einladung`: parsed by `createAuth({ einladung: { input } })` (none allowed
+ * without it), then `authorize` may refuse them for this user; they come back with the result.
+ */
+export const createEinladung = protectedSchemaCommand(z.looseObject({ email: emailSchema.nullable() }), async ({ email, ...rest }, user) => {
 	const ctx = authContext();
 	const { origin, signupMode, admin } = ctx;
 	if (!mayInvite(signupMode, isAdmin(user))) {
 		throw error(403, { message: m().onlyAdminsInvite, id: "forbidden", timestamp: new Date().toISOString() });
 	}
-	const einladung = await einladungService(ctx).erstellen(user.id, { email });
+	const extras = await einladungService(ctx).extrasPruefen(rest, user);
+	if (extras.isErr()) throw error(extras.error.kind === "verboten" ? 403 : 400, { message: extras.error.message, id: extras.error.kind, timestamp: new Date().toISOString() });
+	const einladung = await einladungService(ctx).erstellen(user.id, { ...extras.value, email });
 	const link = `${origin}/einladung/${einladung.token}`;
 	let mailFehler: string | null = null;
 	if (email) {
@@ -41,7 +47,7 @@ export const createEinladung = protectedSchemaCommand(z.object({ email: emailSch
 	}
 	await getOffeneEinladungen().refresh();
 	if (admin && isAdmin(user)) await getAlleEinladungen().refresh();
-	return { link, expiresAt: einladung.expiresAt, mailFehler };
+	return { ...extras.value, id: einladung.id, link, expiresAt: einladung.expiresAt, mailFehler };
 });
 
 export const withdrawEinladung = protectedSchemaCommand(z.object({ einladungId: z.string() }), async ({ einladungId }, user) => {

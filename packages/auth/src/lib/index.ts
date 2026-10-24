@@ -11,6 +11,7 @@ export {
 	SIGNUP_STATES,
 	type AppUserClient,
 	type EinladungInfo,
+	type EinladungRow,
 	type OffeneEinladung,
 	type SessionUser,
 	type SignupMode,
@@ -20,6 +21,7 @@ export {
 } from "#lib/types.js";
 export { isSessionNotFresh, isStale, reauthPath, SESSION_NOT_FRESH } from "#lib/util/fresh.js";
 export { messageOf } from "#lib/util/messageOf.js";
+export { einladungExtras } from "#lib/util/einladung.js";
 export { displayInitials, displayName, nameFromEmail } from "#lib/util/names.js";
 export { sameSitePath } from "#lib/util/sameSite.js";
 export { adminList, isAdmin, isListed, mayInvite, signupState } from "#lib/util/signup.js";

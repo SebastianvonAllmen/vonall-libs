@@ -72,6 +72,46 @@ createAuthClient({ plugins: [inferAdditionalFields({ user: { phone: { type: "str
 
 `userRepo(ctx)` selects every column, so the admin's list and the profile carry the Product's too.
 
+The Profile tab edits those columns when `SettingsPage` gets a `fields` snippet: it renders inside the name and email
+form and binds into `extra`, one key per `userFields` entry, filled from the page's `user` (`homeLayoutLoad` adds
+`userFields`); `updateUserProfile` takes the extra keys (strings, coerced to the field's `type`; an undeclared key is a
+400) and hands them to better-auth's `updateUser`. `setAuthUi({ authClient, displayName })` names a person from more
+than `user.name` wherever the components show one (the settings header, the mobile menu, the admin's list).
+
+```svelte
+<SettingsPage>{#snippet fields(extra)}<Input bind:value={extra.surname} />{/snippet}</SettingsPage>
+```
+
+## A Product's own columns on `einladung`, roles and hooks
+
+What an Einladung hands to the account it creates (a role, a group) is a column on `einladung`:
+
+```ts
+export const schema = authSchema({ admin: true, einladung: { rolle: text("rolle").notNull().default("user") } });
+createAuth({
+	…,
+	einladung: {
+		input: z.object({ rolle: z.enum(["trainer", "user"]).default("user") }), // createEinladung's keys beyond email; none allowed without it
+		authorize: (extras, user) => (extras.rolle === "trainer" && user.role !== "admin" ? "Only admins invite trainers" : null), // a 403; may be async
+	},
+	roles: ["admin", "trainer", "user"], // what an admin may hand out (setUserRole, AdminView); default admin and user
+	hooks: {
+		beforeUserCreate: (user) => ({ ...user, surname: "" }), // after this package's name step; sets userFields
+		afterEinladungAccepted: (userId, einladung) => …, // at signup (before the admin role is given) and when a logged-in user accepts
+		afterUserCreate: (user, einladung) => …, // after the Einladung and the admin role; einladung is null without one
+		beforeUserDelete: (userId) => …, // before the admin's or the owner's delete: what lives outside the database
+	},
+});
+```
+
+`einladungService(ctx).erstellen(userId, { email, ...extras })` writes the columns, `pruefen` and the repository's lists
+read them back (`EinladungRow<typeof schema>`, never the token's hash), `annehmen` returns the row and runs the hook.
+`einladungLoad` and `signupLoad` put them into the page data's `einladung` beside `inviterName`. `AdminView` renders
+its role select from `manageUserLoad`'s `roles` (`roleLabel` names them), marks banned accounts, and takes `intro`,
+`showEinladungErstellen`, and the snippets `userExtra(user, isSelf)`, `einladungExtra(einladung)` and
+`einladungFields(extras)` (inside the form that creates one, bound into `extras`; `SettingsPage` passes the same
+snippet to the Invitations tab). `userRepo(ctx).setBanned(userId, banned, reason)` bans (ending the sessions) or unbans.
+
 ## The pages and the settings (`@vonall/auth/ui`)
 
 ```svelte
@@ -89,6 +129,12 @@ createAuthClient({ plugins: [inferAdditionalFields({ user: { phone: { type: "str
 <!-- src/routes/home/settings -->             <SettingsPage extraTabs={[agentsTab()]}>{#snippet profile()}…{/snippet}{#snippet extra(id)}…{/snippet}</SettingsPage>
 <!-- src/routes/home/manage_user -->          <AdminView currentUserId={data.currentUserId} />
 ```
+
+`SettingsTabDef.after` places a Product's tab after the one it names (default: after this package's); `SettingsPage`
+takes `invitations={false}` to hide the Invitations tab and `menuFooter` for the end of the mobile menu. `RegisterForm`
+takes `redirectTo` (where a new account lands, the social buttons included) and a `description` snippet; `EinladungPage`
+takes `title` and a `loggedIn(einladung)` snippet for someone who already has an account. A social login's callback
+error lands on `/auth/login` (`?error=`). `createUser(ctx, email, name)` in `@vonall/auth/testing` takes a name.
 
 The components read `page.data` as the loads of this package fill it (`providers`, `mail`, `state`, `einladung`, `user`,
 `session`, `einladen`), use the `.panel` and `.section-kicker` classes of the Factory's `app.css`, and ship their own

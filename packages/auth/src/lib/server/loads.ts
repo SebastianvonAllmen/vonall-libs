@@ -8,6 +8,7 @@ import { m } from "#lib/messages.js";
 import { contextOf, type AuthContext } from "#lib/server/context.js";
 import { EINLADUNG_COOKIE, einladungService } from "#lib/server/service/einladung.service.js";
 import type { SessionUser, SignupMode, SignupState } from "#lib/types.js";
+import { einladungExtras } from "#lib/util/einladung.js";
 import { isStale, SESSION_NOT_FRESH } from "#lib/util/fresh.js";
 import { sameSitePath } from "#lib/util/sameSite.js";
 import { isAdmin, mayInvite } from "#lib/util/signup.js";
@@ -28,7 +29,8 @@ export type AuthPageData = {
 	/** Whether the server can send mail (the password reset link shows only then). */
 	mail: boolean;
 	state: SignupState;
-	einladung: { inviterName: string } | null;
+	/** The Einladung the visitor carries: its inviter, and a Product's own columns of it. */
+	einladung: ({ inviterName: string } & Record<string, unknown>) | null;
 	/** The Product has an admin list: the signup form shows even when `state` refuses, for a listed address. */
 	adminList: boolean;
 	user: SessionUser;
@@ -36,7 +38,14 @@ export type AuthPageData = {
 	session: { id: string; expiresAt: Date };
 	/** Whether the user may create Einladungen (the Invitations tab shows). */
 	einladen: boolean;
+	/** The Product's own columns on `user` (`createAuth({ userFields })`), by key: the profile form's extra fields. */
+	userFields: string[];
+	/** The roles an admin may hand out (`createAuth({ roles })`). */
+	roles: string[];
 };
+
+/** The Einladung as the pages show it: the inviter's name and a Product's own columns, nothing else of the row. */
+const einladungData = (einladung: { inviterName: string } & Record<string, unknown>) => ({ inviterName: einladung.inviterName, ...einladungExtras(einladung) });
 
 const uiData = ({ appName, locale, signupMode }: AuthContext): AuthUiData => ({ appName, locale, signupMode });
 
@@ -71,7 +80,7 @@ export async function signupLoad({ locals, cookies }: Event) {
 	if (locals.session) throw redirect(302, "/home");
 	const ctx = contextOf(locals);
 	const { state, einladung } = await einladungService(ctx).signup(cookies.get(EINLADUNG_COOKIE));
-	return { state, einladung: einladung ? { inviterName: einladung.inviterName } : null, adminList: ctx.adminEmails.length > 0 } satisfies Pick<
+	return { state, einladung: einladung ? einladungData(einladung) : null, adminList: ctx.adminEmails.length > 0 } satisfies Pick<
 		AuthPageData,
 		"state" | "einladung" | "adminList"
 	>;
@@ -98,7 +107,7 @@ export async function einladungLoad({ params, cookies, locals, url }: Event) {
 		secure: url.protocol === "https:",
 		expires: einladung.expiresAt,
 	});
-	return { fehler: null, einladung: { inviterName: einladung.inviterName }, eingeloggt: !!locals.user, authUi };
+	return { fehler: null, einladung: einladungData(einladung), eingeloggt: !!locals.user, authUi };
 }
 
 /** `/home`: login required; the user, the session (never its token), the providers and whether the user may invite. */
@@ -109,12 +118,16 @@ export function homeLayoutLoad({ locals }: Event) {
 	// Never the session token itself: page data ends up in the HTML and in client JS
 	const session = { id: locals.session.id, expiresAt: locals.session.expiresAt };
 	// Whether the Invitations tab shows: the signup mode decides who creates Einladungen
-	return { user, session, providers: ctx.providers, einladen: mayInvite(ctx.signupMode, isAdmin(locals.user)), authUi: uiData(ctx) } satisfies Pick<AuthPageData, "user" | "session" | "providers" | "einladen" | "authUi">;
+	return { user, session, providers: ctx.providers, einladen: mayInvite(ctx.signupMode, isAdmin(locals.user)), userFields: Object.keys(ctx.userFields), authUi: uiData(ctx) } satisfies Pick<
+		AuthPageData,
+		"user" | "session" | "providers" | "einladen" | "userFields" | "authUi"
+	>;
 }
 
-/** `/home/manage_user` (the Admin option): admins only. */
+/** `/home/manage_user` (the Admin option): admins only; the roles they may hand out. */
 export function manageUserLoad({ locals }: Event) {
 	if (!locals.session || !locals.user) throw redirect(302, "/auth/login");
 	if (!isAdmin(locals.user)) throw redirect(302, "/home");
-	return { currentUserId: locals.user.id };
+	const ctx = contextOf(locals);
+	return { currentUserId: locals.user.id, roles: [...ctx.roles] } satisfies Pick<AuthPageData, "roles"> & { currentUserId: string };
 }

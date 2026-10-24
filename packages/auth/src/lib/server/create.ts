@@ -7,7 +7,7 @@
 import type { RequestHandler } from "@sveltejs/kit";
 import type { Handle } from "@sveltejs/kit/hooks";
 import { getRequestEvent } from "$app/server";
-import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin } from "better-auth";
+import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { admin as adminPlugin } from "better-auth/plugins";
@@ -22,11 +22,45 @@ import { hashPassword, verifyPassword } from "#lib/server/crypto.js";
 import { userRepo } from "#lib/server/repositories/UserRepo.js";
 import { EINLADUNG_COOKIE, einladungService } from "#lib/server/service/einladung.service.js";
 import { authMails } from "#lib/server/service/mail.js";
-import { MIN_PASSWORD_LENGTH, type SignupMode } from "#lib/types.js";
+import type { z } from "zod";
+import { MIN_PASSWORD_LENGTH, type EinladungRow, type SessionUser, type SignupMode } from "#lib/types.js";
 import { nameFromEmail } from "#lib/util/names.js";
 import { adminList, isListed } from "#lib/util/signup.js";
 
 export type SocialProvider = { clientId: string; clientSecret: string };
+
+/** The user as better-auth's `user.create` hooks see it: its columns, a Product's own among them. */
+export type NewUser = User & Record<string, unknown>;
+
+/** The roles when a Product names none: better-auth's admin plugin's. */
+export const DEFAULT_ROLES: readonly string[] = ["admin", "user"];
+
+/**
+ * A Product's hooks into accounts, each optional. Typed against its schema (`AuthHooks<typeof schema>`), so an
+ * Einladung's own columns are typed in `afterUserCreate` and `afterEinladungAccepted`.
+ */
+export type AuthHooks<S extends AuthSchema = AuthSchema> = {
+	/** Before the account is written, after this package set its name: return the user, extra fields (`userFields`) set. */
+	beforeUserCreate?(user: NewUser): NewUser | Promise<NewUser>;
+	/** After the account exists, its Einladung accepted and the admin role (first account, admin list) given; `einladung` is null without one. */
+	afterUserCreate?(user: NewUser, einladung: EinladungRow<S> | null): void | Promise<void>;
+	/** Whenever an Einladung is accepted: at signup (before the admin role, so a role it sets never outranks the admin list) and by a logged-in user. */
+	afterEinladungAccepted?(userId: string, einladung: EinladungRow<S>): void | Promise<void>;
+	/** Before a Konto is deleted, by the admin or by its owner: what lives outside the database goes here. */
+	beforeUserDelete?(userId: string): void | Promise<void>;
+};
+
+/**
+ * How `createEinladung` takes a Product's own columns on `einladung`: `input` parses the keys beyond `email` (without
+ * it, none are allowed), `authorize` may refuse them for this user with a message (a 403).
+ */
+export type EinladungOptions = {
+	input?: z.ZodType<Record<string, unknown>>;
+	authorize?(extras: Record<string, unknown>, user: SessionUser): string | null | Promise<string | null>;
+};
+
+/** better-auth's `additionalFields` of `user`: the Product's own columns, with their type for the profile form. */
+export type UserFields = NonNullable<NonNullable<BetterAuthOptions["user"]>["additionalFields"]>;
 
 export type CreateAuthOptions<S extends AuthSchema = AuthSchema> = {
 	/** The Product's Drizzle database. */
@@ -55,6 +89,12 @@ export type CreateAuthOptions<S extends AuthSchema = AuthSchema> = {
 	 * mail); an existing account gets it at its next login. Set, the first account is no longer the admin. Admin option only.
 	 */
 	adminEmails?: string;
+	/** The Product's hooks into signup, Einladungen and deletion. */
+	hooks?: AuthHooks<S>;
+	/** How `createEinladung` takes the Product's own columns on `einladung` (`authSchema({ einladung })`). */
+	einladung?: EinladungOptions;
+	/** The roles an admin may hand out in the user list (`setUserRole`, `AdminView`); default `["admin", "user"]`. The Product's admin plugin knows the same. */
+	roles?: readonly string[];
 	log?: AuthLog;
 };
 
@@ -105,7 +145,7 @@ export type AuthWiring<S extends AuthSchema = AuthSchema> = {
 };
 
 export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>): AuthWiring<S> {
-	const { secret, origin, appName, signupMode, social = {}, rateLimitRules = {}, log = consoleLog } = options;
+	const { secret, origin, appName, signupMode, social = {}, rateLimitRules = {}, hooks = {}, log = consoleLog } = options;
 	let instance: Auth | null = null;
 	const adminEmails = adminList(options.adminEmails);
 	const ctx: AuthContext<S> = {
@@ -121,6 +161,10 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 		adminEmails,
 		mcp: "oauthClient" in options.schema,
 		providers: { github: hasKeys(social.github), google: hasKeys(social.google) },
+		hooks,
+		roles: options.roles ?? DEFAULT_ROLES,
+		einladung: options.einladung ?? {},
+		userFields: options.userFields ?? {},
 		get auth() {
 			if (!instance) throw new Error("@vonall/auth: createAuth().register(auth) has not run; the app's auth wiring (src/lib/auth.ts) calls it after betterAuth()");
 			return instance;
@@ -176,18 +220,26 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 						if (firstAccount) user.emailVerified = true;
 						// Signup with email and password sends the email's local part as the name; make it readable
 						if (user.email && (!user.name || user.name === user.email.split("@")[0])) user.name = nameFromEmail(user.email);
-						return { data: user };
+						// The Product's turn: its own fields (`userFields`)
+						const data = hooks.beforeUserCreate ? await hooks.beforeUserCreate(user) : user;
+						return { data };
 					},
 					after: async (user) => {
+						// First the Einladung (the Product's `afterEinladungAccepted` may set a role from it), THEN the admin role, so a
+						// role an Einladung carries never outranks the admin list or the first account
+						let einladung: EinladungRow | null = null;
+						const token = einladungAusCookie();
+						if (token) {
+							const angenommen = await einladungen.annehmen(user.id, token);
+							if (angenommen.isOk()) einladung = angenommen.value;
+							else log.warn("Einladung could not be accepted after signup", { userId: user.id, kind: angenommen.error.kind });
+							getRequestEvent().cookies.delete(EINLADUNG_COOKIE, { path: "/" });
+						}
 						// The first user becomes admin, unless the admin list says who is; a listed address its provider confirmed is
 						// the admin at once (the mailed link makes a password signup one, below)
 						if (ctx.admin && adminEmails.length === 0 && (await users.countUsers()) === 1) await makeAdmin(user.id, "First user created, bootstrapping global role to admin");
 						else if (listedAdmin(user)) await makeAdmin(user.id, "Listed address signed up confirmed, role admin");
-						const token = einladungAusCookie();
-						if (!token) return;
-						const angenommen = await einladungen.annehmen(user.id, token);
-						if (angenommen.isErr()) log.warn("Einladung could not be accepted after signup", { userId: user.id, kind: angenommen.error.kind });
-						getRequestEvent().cookies.delete(EINLADUNG_COOKIE, { path: "/" });
+						await hooks.afterUserCreate?.(user, einladung as EinladungRow<S> | null);
 					},
 				},
 			},
@@ -226,6 +278,9 @@ export function createAuth<S extends AuthSchema>(options: CreateAuthOptions<S>):
 				if (listedAdmin({ ...user, emailVerified: true })) await makeAdmin(user.id, "Listed address confirmed, role admin");
 			},
 		},
+		// A social login's callback that fails (no email from the provider, a state mismatch) lands on the login page, which
+		// shows the `?error=` reason, instead of better-auth's own error page
+		onAPIError: { errorURL: `${baseURL}/auth/login` },
 		socialProviders: {
 			...(hasKeys(social.github) ? { github: social.github } : {}),
 			...(hasKeys(social.google) ? { google: social.google } : {}),
