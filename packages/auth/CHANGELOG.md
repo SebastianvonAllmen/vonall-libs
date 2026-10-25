@@ -1,5 +1,11 @@
 # @vonall/auth
 
+## 0.10.0
+
+### Minor Changes
+
+- [`def7b56`](https://github.com/SebastianvonAllmen/vonall-libs/commit/def7b562134e25fb254cb50d2ed2e09ef8f37aa3) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - The avatar's initials in the settings header and the mobile settings menu follow the name `setAuthUi({ displayName })` shows ("Lena Muster" → "LM"), else the email's first letter as before; `displayInitials(user, name?)` takes the shown name. `SettingsTabDef.panel: false` renders a Product's settings tab without the panel frame, for a tab that brings its own cards (default `true`, unchanged).
+
 ## 0.9.0
 
 ### Minor Changes
