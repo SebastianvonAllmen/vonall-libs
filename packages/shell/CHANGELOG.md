@@ -1,5 +1,11 @@
 # @vonall/shell
 
+## 0.3.1
+
+### Patch Changes
+
+- [#28](https://github.com/SebastianvonAllmen/vonall-libs/pull/28) [`6cfdb00`](https://github.com/SebastianvonAllmen/vonall-libs/commit/6cfdb00c77ce21f162d7c296c4d3987bc471ee42) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - The sidebar no longer highlights the item whose href is a prefix of the More page (`moreItem`): on that page nothing is highlighted, as on every page without an entry of its own. `AppSideBar` takes `moreItem`; `activeSidebarId()` is exported.
+
 ## 0.3.0
 
 ### Minor Changes
