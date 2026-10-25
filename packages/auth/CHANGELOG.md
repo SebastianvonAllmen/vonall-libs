@@ -1,5 +1,15 @@
 # @vonall/auth
 
+## 0.11.0
+
+### Minor Changes
+
+- [#37](https://github.com/SebastianvonAllmen/vonall-libs/pull/37) [`30866b2`](https://github.com/SebastianvonAllmen/vonall-libs/commit/30866b2e4374f64c04475bd960c616954fdae60c) Thanks [@SebastianvonAllmen](https://github.com/SebastianvonAllmen)! - A Product's own look for two pages: `SettingsPage` takes `mobileMenu`, a snippet given
+  `{ user, memberSince, tabs, active, select }` that replaces the phone's settings navigation: the menu while `active` is
+  undefined, the bar back to it while a tab is open (`tabs` are the ones this user may see; `select(id)` opens one,
+  `select("")` returns to the menu), and `AdminView` takes
+  `class`, replacing the page's width and spacing (default centred, `max-w-3xl`). Without them nothing changes.
+
 ## 0.10.0
 
 ### Minor Changes
