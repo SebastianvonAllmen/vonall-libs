@@ -133,7 +133,10 @@ snippet to the Invitations tab). `userRepo(ctx).setBanned(userId, banned, reason
 
 `SettingsTabDef.after` places a Product's tab after the one it names (default: after this package's);
 `SettingsTabDef.panel: false` renders a tab that brings its own cards without the panel frame around it; `SettingsPage`
-takes `invitations={false}` to hide the Invitations tab and `menuFooter` for the end of the mobile menu. `RegisterForm`
+takes `invitations={false}` to hide the Invitations tab, `menuFooter` for the end of the mobile menu and
+`mobileMenu` for the phone's navigation in the Product's own look (a snippet given
+`{ user, memberSince, tabs, active, select }`: the menu while `active` is undefined, the bar back to it while a tab is
+open; `tabs` are the ones this user may see, `select(id)` opens one, `select("")` returns to the menu). `AdminView` takes `class` for the page's width and spacing. `RegisterForm`
 takes `redirectTo` (where a new account lands, the social buttons included) and a `description` snippet; `EinladungPage`
 takes `title` and a `loggedIn(einladung)` snippet for someone who already has an account. A social login's callback
 error lands on `/auth/login` (`?error=`). `createUser(ctx, email, name)` in `@vonall/auth/testing` takes a name.
