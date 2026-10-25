@@ -15,6 +15,7 @@
 	import SessionsTab from "#lib/ui/SessionsTab.svelte";
 	import SettingsHeader from "#lib/ui/SettingsHeader.svelte";
 	import SettingsTabsList from "#lib/ui/SettingsTabsList.svelte";
+	import type { SessionUser } from "#lib/types.js";
 	import { visibleTabs, type SettingsTabDef } from "#lib/ui/tabs.js";
 
 	/**
@@ -23,7 +24,9 @@
 	 * `extraTabs` (their definitions, `after` places one) and `extra` (their content, given the tab id), e.g. the AI
 	 * assistants of `@vonall/mcp`; `fields` renders inside the name and email form (the Product's own columns on `user`,
 	 * bound into `extra`), `profile` below it (its own form on its own table); `einladungFields` reaches the Invitations
-	 * tab's form, `invitations: false` hides that tab, `menuFooter` ends the mobile menu.
+	 * tab's form, `invitations: false` hides that tab, `menuFooter` ends the mobile menu, `mobileMenu` replaces the
+	 * phone's navigation with the Product's own markup: the menu while no tab is open, the bar back to it while `active`
+	 * is (given the user, the tabs they may see and `select`; `select("")` returns to the menu).
 	 */
 	let {
 		extraTabs = [],
@@ -33,6 +36,7 @@
 		einladungFields,
 		invitations = true,
 		menuFooter,
+		mobileMenu,
 	}: {
 		extraTabs?: SettingsTabDef[];
 		extra?: Snippet<[string]>;
@@ -41,6 +45,9 @@
 		einladungFields?: Snippet<[Record<string, unknown>]>;
 		invitations?: boolean;
 		menuFooter?: Snippet;
+		mobileMenu?: Snippet<
+			[{ user: SessionUser; memberSince: string; tabs: SettingsTabDef[]; active: SettingsTabDef | undefined; select: (tabId: string) => void }]
+		>;
 	} = $props();
 	const { appName, locale } = authUi();
 
@@ -58,7 +65,8 @@
 	});
 
 	const hasTabParam = $derived(isTab(page.url.searchParams.get("tab")));
-	const activeTabTitle = $derived(tabs.find((t) => t.id === page.url.searchParams.get("tab"))?.label ?? "");
+	const activeTabDef = $derived(tabs.find((t) => t.id === page.url.searchParams.get("tab")));
+	const activeTabTitle = $derived(activeTabDef?.label ?? "");
 
 	function selectTab(tabName: string) {
 		const url = new URL(page.url.href);
@@ -82,7 +90,9 @@
 
 	<!-- Mobile: a menu, then one tab at a time -->
 	<div class="w-full space-y-4 md:hidden">
-		{#if !hasTabParam}
+		{#if mobileMenu}
+			{@render mobileMenu({ user, memberSince, tabs, active: activeTabDef, select: selectTab })}
+		{:else if !hasTabParam}
 			<MobileSettingsMenu {user} {memberSince} {tabs} onSelectTab={selectTab} footer={menuFooter} />
 		{:else}
 			<div class="panel flex items-center gap-3 p-3">

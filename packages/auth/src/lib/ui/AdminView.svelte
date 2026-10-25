@@ -16,7 +16,7 @@
 	 * data. The roles come from `manageUserLoad` (`createAuth({ roles })`), `roleLabel` names them. A Product adds its own
 	 * to each account (`userExtra`, the admin's own row included), to each open Einladung (`einladungExtra`) and to the
 	 * form that creates one (`einladungFields`, bound into its `extras`); `intro` replaces the sentence about the links,
-	 * `showEinladungErstellen: false` hides the form.
+	 * `showEinladungErstellen: false` hides the form, `class` replaces the page's width and spacing (centred, 48rem).
 	 */
 	let {
 		currentUserId,
@@ -26,6 +26,7 @@
 		userExtra,
 		einladungExtra,
 		einladungFields,
+		class: className = "mx-auto grid max-w-3xl gap-6",
 	}: {
 		currentUserId: string;
 		intro?: string;
@@ -34,6 +35,7 @@
 		userExtra?: Snippet<[AppUserClient, boolean]>;
 		einladungExtra?: Snippet<[EinladungRow & { inviterName: string }]>;
 		einladungFields?: Snippet<[Record<string, unknown>]>;
+		class?: string;
 	} = $props();
 	const { locale, displayName } = authUi();
 	const roles = $derived(authPageData("roles").roles);
@@ -61,7 +63,7 @@
 	}
 </script>
 
-<div class="mx-auto grid max-w-3xl gap-6">
+<div class={className}>
 	<header>
 		<span class="section-kicker">{m().administration}</span>
 		<h1 class="text-2xl font-semibold tracking-tight">{m().accounts}</h1>
