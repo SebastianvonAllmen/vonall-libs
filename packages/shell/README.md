@@ -38,6 +38,13 @@ A Product's own chrome goes through `AppShell`'s optional snippets and props; wi
 | `themeToggle` (default `true`)     | `false` hides the light/dark toggle in the mobile header and the account menu        |
 | `displayName` (`(user) => string`) | how the sidebar header, account menu and avatar initials name the user (default: name, else email) |
 | `crumbFallback` (`(seg) => string \| undefined`) | names a breadcrumb segment without a label before it is humanized (an id as "…") |
+| `mobileHeader` (snippet)           | the whole mobile header, instead of the brand, widgets, theme toggle and avatar      |
+| `tabBar` (snippet `(tabs, active)`) | the tab bar's markup; `tabs` and the active tab's id stay the shell's (`mobileTabs`, `activeTab`) |
+| `mainClass` (string)               | the page container's padding and width, instead of the default                       |
+
+`mobileHeader`, `tabBar` and `mainClass` are for a Product with a look of its own (IronPact's glass header and tab
+bar): it renders the markup, the shell still decides which tabs exist and which is active. Its header carries
+`md:hidden` (or its own rule hiding it from 768 px), its tab bar is placed inside the shell's `md:hidden` wrapper.
 
 The sidebar, both headers and the tab bar carry `print:hidden`, so a printed page is only the page. Strings in English and German:
 `configureShellMessages({ locale, overrides })`. The components ship their own copies of the shadcn-svelte sidebar,

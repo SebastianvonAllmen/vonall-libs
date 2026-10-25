@@ -35,6 +35,9 @@
 		mobileBrand,
 		headerActions,
 		sidebarFooter,
+		mobileHeader,
+		tabBar,
+		mainClass = "px-4 pt-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:mx-auto md:max-w-7xl md:px-4 md:py-8",
 		children,
 	}: {
 		user: ShellUser;
@@ -61,6 +64,12 @@
 		headerActions?: Snippet;
 		/** Rendered in the sidebar's footer above the account menu. */
 		sidebarFooter?: Snippet;
+		/** The whole mobile header, instead of the brand, the widgets, the theme toggle and the avatar (a Product's own look). */
+		mobileHeader?: Snippet;
+		/** The mobile tab bar's markup, given the tabs and the active tab's id; which tabs and which is active stay the shell's. */
+		tabBar?: Snippet<[tabs: NavItem[], active: string]>;
+		/** The page container's spacing and width, instead of the default padding (mobile: above the tab bar; desktop: centred). */
+		mainClass?: string;
 		children?: Snippet;
 	} = $props();
 
@@ -97,15 +106,19 @@
 			{/if}
 		</header>
 
-		<MobileHeader {user} {appName} {themeToggle} {displayName} brand={mobileBrand} actions={headerActions} />
+		{#if mobileHeader}
+			{@render mobileHeader()}
+		{:else}
+			<MobileHeader {user} {appName} {themeToggle} {displayName} brand={mobileBrand} actions={headerActions} />
+		{/if}
 
 		<!-- The page, rendered exactly once for both layouts -->
-		<main class="w-full flex-grow px-4 pt-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:mx-auto md:max-w-7xl md:px-4 md:py-8">
+		<main class="w-full flex-grow {mainClass}">
 			{@render children?.()}
 		</main>
 
 		<div class="md:hidden print:hidden">
-			<MobileBottomNav {user} {navItems} {moreItem} />
+			<MobileBottomNav {user} {navItems} {moreItem} markup={tabBar} />
 		</div>
 	</Sidebar.Inset>
 </Sidebar.Provider>
