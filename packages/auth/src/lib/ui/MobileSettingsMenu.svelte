@@ -16,7 +16,7 @@
 <section class="panel flex items-center gap-4 p-5">
 	<Avatar.Root class="size-14">
 		{#if user.image}<Avatar.Image src={user.image} alt="" />{/if}
-		<Avatar.Fallback class="bg-primary/10 text-xl font-semibold text-primary">{displayInitials(user)}</Avatar.Fallback>
+		<Avatar.Fallback class="bg-primary/10 text-xl font-semibold text-primary">{displayInitials(user, displayName(user))}</Avatar.Fallback>
 	</Avatar.Root>
 	<div class="min-w-0">
 		<span class="section-kicker">{m().profile}</span>

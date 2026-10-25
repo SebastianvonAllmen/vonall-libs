@@ -12,6 +12,8 @@ export type SettingsTabDef = {
 	deletionNote?: string;
 	/** The id of the tab this one follows (`"profile"` makes it the second); without it, a Product's tab comes after this package's. */
 	after?: string;
+	/** `false` when the tab brings its own cards: its content is rendered without the panel frame (default `true`). */
+	panel?: boolean;
 };
 
 /** This package's tabs, in order, in the configured language; a Product adds its own (e.g. the AI assistants) through `SettingsPage`. */

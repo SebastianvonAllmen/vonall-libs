@@ -12,7 +12,7 @@
 <div class="flex items-center gap-6">
 	<Avatar.Root class="size-20 rounded-full border-2 border-muted">
 		{#if user?.image}<Avatar.Image src={user.image} alt="" />{/if}
-		<Avatar.Fallback class="text-2xl">{user ? displayInitials(user) : "?"}</Avatar.Fallback>
+		<Avatar.Fallback class="text-2xl">{user ? displayInitials(user, displayName(user)) : "?"}</Avatar.Fallback>
 	</Avatar.Root>
 	<div class="space-y-1">
 		<h1 class="text-3xl font-bold tracking-tight">{user ? displayName(user) : m().user}</h1>

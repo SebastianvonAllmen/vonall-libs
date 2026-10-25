@@ -76,7 +76,8 @@ The Profile tab edits those columns when `SettingsPage` gets a `fields` snippet:
 form and binds into `extra`, one key per `userFields` entry, filled from the page's `user` (`homeLayoutLoad` adds
 `userFields`); hidden inputs carry `extra` along, so the snippet's inputs take no `name`. `updateUserProfile` takes the extra keys (strings, coerced to the field's `type`; an undeclared key is a
 400) and hands them to better-auth's `updateUser`. `setAuthUi({ authClient, displayName })` names a person from more
-than `user.name` wherever the components show one (the settings header, the mobile menu, the admin's list).
+than `user.name` wherever the components show one (the settings header, the mobile menu, the admin's list); the
+avatar's initials follow that name.
 
 ```svelte
 <SettingsPage>{#snippet fields(extra)}<Input bind:value={extra.surname} />{/snippet}</SettingsPage>
@@ -130,7 +131,8 @@ snippet to the Invitations tab). `userRepo(ctx).setBanned(userId, banned, reason
 <!-- src/routes/home/manage_user -->          <AdminView currentUserId={data.currentUserId} />
 ```
 
-`SettingsTabDef.after` places a Product's tab after the one it names (default: after this package's); `SettingsPage`
+`SettingsTabDef.after` places a Product's tab after the one it names (default: after this package's);
+`SettingsTabDef.panel: false` renders a tab that brings its own cards without the panel frame around it; `SettingsPage`
 takes `invitations={false}` to hide the Invitations tab and `menuFooter` for the end of the mobile menu. `RegisterForm`
 takes `redirectTo` (where a new account lands, the social buttons included) and a `description` snippet; `EinladungPage`
 takes `title` and a `loggedIn(einladung)` snippet for someone who already has an account. A social login's callback
