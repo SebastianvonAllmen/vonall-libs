@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Component } from "svelte";
-import { activeNavItem, activeTab, crumbLabel, crumbs, mobileTabs, type NavItem } from "./nav";
+import { activeNavItem, activeSidebarId, activeTab, crumbLabel, crumbs, mobileTabs, type NavItem } from "./nav";
 
 const icon = (() => {}) as unknown as NavItem["icon"];
 const ITEMS: NavItem[] = [
@@ -18,6 +18,18 @@ describe("nav", () => {
 		expect(activeNavItem(ITEMS, "/home/settings")?.id).toBe("settings");
 		expect(activeNavItem(ITEMS, "/home/somewhere/else")?.id).toBe("home");
 		expect(activeNavItem(ITEMS, "/elsewhere")).toBeUndefined();
+	});
+
+	it("highlights the sidebar entry of the page, and none on the More page", () => {
+		const more: NavItem = { id: "more", label: "More", href: "/home/more", icon };
+		expect(activeSidebarId(ITEMS, undefined, "/home")).toBe("home");
+		expect(activeSidebarId(ITEMS, undefined, "/home/more")).toBe("home");
+		expect(activeSidebarId(ITEMS, undefined, "/elsewhere")).toBeUndefined();
+		expect(activeSidebarId(ITEMS, more, "/home")).toBe("home");
+		expect(activeSidebarId(ITEMS, more, "/home/settings")).toBe("settings");
+		expect(activeSidebarId(ITEMS, more, "/home/more")).toBeUndefined();
+		expect(activeSidebarId(ITEMS, more, "/home/more/deeper")).toBeUndefined();
+		expect(activeSidebarId(ITEMS, more, "/elsewhere")).toBeUndefined();
 	});
 
 	it("labels a breadcrumb by the Product's label, else by the page's, else readably", () => {
