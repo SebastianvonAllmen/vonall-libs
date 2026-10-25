@@ -3,7 +3,7 @@
 	import { page } from "$app/state";
 	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
 	import { m } from "#lib/messages.js";
-	import { activeNavItem, href, type NavItem } from "#lib/nav.js";
+	import { activeSidebarId, href, type NavItem } from "#lib/nav.js";
 	import { displayName as defaultDisplayName } from "#lib/shell/names.js";
 	import AppBrand from "./AppBrand.svelte";
 	import type { ShellUser } from "./AppShell.svelte";
@@ -15,6 +15,7 @@
 		appName,
 		navItems,
 		signOut,
+		moreItem,
 		themeToggle = true,
 		displayName = defaultDisplayName,
 		brand,
@@ -27,6 +28,8 @@
 		appName: string;
 		navItems: readonly NavItem[];
 		signOut: () => Promise<void>;
+		/** The mobile bar's More item: its page highlights no entry (it is not in the sidebar). */
+		moreItem?: NavItem;
 		themeToggle?: boolean;
 		displayName?: (user: ShellUser) => string;
 		/** The header, instead of `AppBrand`. */
@@ -39,7 +42,7 @@
 
 	const mainItems = $derived(navItems.filter((item) => !item.admin && item.sidebar !== false));
 	const adminItems = $derived(navItems.filter((item) => item.admin));
-	const activeId = $derived(activeNavItem(navItems, page.url.pathname)?.id);
+	const activeId = $derived(activeSidebarId(navItems, moreItem, page.url.pathname));
 </script>
 
 {#snippet entry(item: NavItem)}

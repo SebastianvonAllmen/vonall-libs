@@ -70,7 +70,7 @@
 <Sidebar.Provider>
 	<!-- Desktop: the sidebar (hidden on mobile) -->
 	<div class="hidden md:block print:hidden">
-		<AppSideBar {user} {appName} {navItems} {signOut} {themeToggle} {displayName} {brand} footer={sidebarFooter} />
+		<AppSideBar {user} {appName} {navItems} {signOut} {moreItem} {themeToggle} {displayName} {brand} footer={sidebarFooter} />
 	</div>
 
 	<Sidebar.Inset style="scrollbar-gutter: stable;" class="flex min-h-svh w-full flex-col">

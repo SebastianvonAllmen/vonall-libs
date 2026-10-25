@@ -43,6 +43,15 @@ export function activeTab(items: readonly NavItem[], tabs: readonly NavItem[], p
 	return moreItem?.id ?? tabs[0]?.id ?? "home";
 }
 
+/**
+ * The id of the sidebar entry a path highlights: the page's own item. `moreItem` (the More page, not in the sidebar)
+ * takes part in the match so that its page highlights nothing instead of the item whose href is its prefix.
+ */
+export function activeSidebarId(items: readonly NavItem[], moreItem: NavItem | undefined, path: string): string | undefined {
+	const active = activeNavItem(moreItem ? [...items, moreItem] : items, path);
+	return active && items.some((item) => item.id === active.id) ? active.id : undefined;
+}
+
 /** The breadcrumb label of one path segment: the Product's own label, else the page's name. */
 export function crumbLabel(items: readonly NavItem[], labels: Record<string, string>, segment: string): string | undefined {
 	return labels[segment] ?? items.find((item) => item.href.split("/").pop() === segment)?.label;
