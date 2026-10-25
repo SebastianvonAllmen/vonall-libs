@@ -105,7 +105,7 @@
 		<LinksTab />
 		{#if einladen && invitations}<InvitationsTab {einladungFields} />{/if}
 		{#each extraTabs as tab (tab.id)}
-			<Tabs.Content value={tab.id} class="panel mt-6 p-6 md:p-8">{@render extra?.(tab.id)}</Tabs.Content>
+			<Tabs.Content value={tab.id} class={tab.panel === false ? "mt-6" : "panel mt-6 p-6 md:p-8"}>{@render extra?.(tab.id)}</Tabs.Content>
 		{/each}
 		<DeletionTab notes={extraTabs.map((t) => t.deletionNote).filter((n): n is string => Boolean(n))} />
 	</div>
